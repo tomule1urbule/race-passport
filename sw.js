@@ -1,8 +1,8 @@
 // Race Passport offline support.
 // The app page is fetched fresh when online (so updates show up right away) and from cache when offline.
 // Libraries, fonts, country shapes and town lists are cached after first use. Map tiles are not cached.
-const CACHE = 'race-passport-v3';
-const SHELL = ['./', './index.html', './art.js', './countries.json', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+const CACHE = 'race-passport-v4';
+const SHELL = ['./', './index.html', './art.js?v=1.3', './countries.json', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -19,7 +19,7 @@ self.addEventListener('fetch', e => {
   const isAppCode = url.origin === location.origin && url.pathname.endsWith('/art.js');
   if (isPage || isAppCode) {
     // network first, so a new version shows up on the next open
-    e.respondWith(fetch(req).then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(isPage ? './index.html' : req, copy)); return res; })
+    e.respondWith(fetch(req, { cache: 'no-cache' }).then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(isPage ? './index.html' : req, copy)); return res; })
       .catch(() => caches.match(isPage ? './index.html' : req)));
     return;
   }
