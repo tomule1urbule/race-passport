@@ -66,6 +66,8 @@ main{padding:16px}
 #mapwrap{position:relative;overflow:hidden;padding:0;isolation:isolate}
 #map{height:min(62vh,520px);background:var(--ocean);border-radius:18px}
 .leaflet-container{background:var(--ocean);font-family:var(--body)}
+#map.osm .leaflet-tile-pane{filter:saturate(.75) contrast(.96)}
+#map.osm-dark .leaflet-tile-pane{filter:invert(1) hue-rotate(185deg) brightness(.82) contrast(.92) saturate(.55)}
 .leaflet-control-zoom a{background:var(--card)!important;color:var(--ink)!important;border-color:var(--line)!important;width:38px!important;height:38px!important;line-height:38px!important}
 .leaflet-control-attribution{background:color-mix(in srgb,var(--card) 80%,transparent)!important;color:var(--muted)!important;font-size:9px}
 .leaflet-control-attribution a{color:var(--muted)!important}
@@ -672,17 +674,33 @@ function stampSVG(r, opts = {}) {
 
 /* ================= map ================= */
 let map, baseTiles, labelTiles, countryLayer, pinLayer, mapFitted = false, tilesOk = false, tileErrors = 0;
-const TILE_URL = (dark, labels) => dark ? `https://{s}.basemaps.cartocdn.com/${labels ? 'dark_only_labels' : 'dark_nolabels'}/{z}/{x}/{y}{r}.png` : `https://{s}.basemaps.cartocdn.com/rastertiles/${labels ? 'voyager_only_labels' : 'voyager_nolabels'}/{z}/{x}/{y}{r}.png`;
+// Map tiles: OpenStreetMap by default (no key needed). If you paste a free CARTO key in Settings, CARTO's styled maps are used instead.
+const cartoKey = () => (store.get('rp.cartokey', '') || '').trim();
+const TILE_URL = (dark, labels) => {
+  const k = cartoKey();
+  if (!k) return labels ? null : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const q = '?key=' + encodeURIComponent(k);
+  return dark ? `https://{s}.basemaps.cartocdn.com/${labels ? 'dark_only_labels' : 'dark_nolabels'}/{z}/{x}/{y}{r}.png${q}` : `https://{s}.basemaps.cartocdn.com/rastertiles/${labels ? 'voyager_only_labels' : 'voyager_nolabels'}/{z}/{x}/{y}{r}.png${q}`;
+};
+const ATTR = () => cartoKey() ? '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, © <a href="https://carto.com/attributions">CARTO</a>' : '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+function setTiles() {
+  if (!map) return;
+  if (baseTiles) map.removeLayer(baseTiles); if (labelTiles) map.removeLayer(labelTiles); labelTiles = null;
+  const dark = isDark(), osm = !cartoKey();
+  $('#map').classList.toggle('osm', osm); $('#map').classList.toggle('osm-dark', osm && dark);
+  const opts = { maxZoom: 19, crossOrigin: true, attribution: ATTR() };
+  baseTiles = L.tileLayer(TILE_URL(dark, false), osm ? opts : { ...opts, subdomains: 'abcd' }).addTo(map);
+  baseTiles.on('tileload', () => { if (!tilesOk) { tilesOk = true; if (countryLayer) countryLayer.setStyle(countryStyle); } });
+  baseTiles.on('tileerror', () => { tileErrors++; if (!tilesOk && tileErrors === 4 && countryLayer) countryLayer.setStyle(countryStyle); });
+  const lu = TILE_URL(dark, true);
+  if (lu) labelTiles = L.tileLayer(lu, { maxZoom: 19, crossOrigin: true, subdomains: 'abcd', pane: 'labels' }).addTo(map);
+}
 function initMap() {
   if (!window.L) { $('#map').innerHTML = '<div class="mapnote">Map couldn’t load — check your connection. Your races are safe.</div>'; return; }
   map = L.map('map', { worldCopyJump: true, minZoom: 2, maxZoom: 15, zoomSnap: .5, tap: true }).setView([50, 18], 3);
   map.attributionControl.setPrefix(false);
   map.createPane('labels'); map.getPane('labels').style.zIndex = 450; map.getPane('labels').style.pointerEvents = 'none';
-  const opts = { subdomains: 'abcd', maxZoom: 19, detectRetina: false, crossOrigin: true };
-  baseTiles = L.tileLayer(TILE_URL(isDark(), false), { ...opts, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>' }).addTo(map);
-  labelTiles = L.tileLayer(TILE_URL(isDark(), true), { ...opts, pane: 'labels' }).addTo(map);
-  baseTiles.on('tileload', () => { if (!tilesOk) { tilesOk = true; if (countryLayer) countryLayer.setStyle(countryStyle); } });
-  baseTiles.on('tileerror', () => { tileErrors++; if (!tilesOk && tileErrors === 4 && countryLayer) countryLayer.setStyle(countryStyle); });
+  setTiles();
   pinLayer = L.layerGroup().addTo(map);
   map.on('zoomend', () => countryLayer && countryLayer.setStyle(countryStyle));
   loadCountries().then(C => {
@@ -866,7 +884,8 @@ function renderStats() {
       <div class="row"><button type="button" class="btn" data-act="export">Export backup</button><div class="btn filetap" id="importBox">Import backup${FILE_IN('application/json,.json')}</div></div>
       <button type="button" class="btn primary" data-act="install" style="display:${installPrompt ? '' : 'none'}">Install app on this phone</button>
       <p class="muted" style="margin:0;font-size:12px">Races and photos are saved on this device. Export a backup now and then — it includes your photos.</p>
-      <p class="muted" style="margin:0;font-size:11px">Map © OpenStreetMap contributors, © CARTO · Borders: Natural Earth · Towns: GeoNames (CC BY 4.0)</p>
+      <label class="field" style="margin:0"><span>CARTO map key <em class="muted" style="text-transform:none;letter-spacing:0;font-style:normal">(optional — nicer map style)</em></span><input id="cartoIn" value="${esc(cartoKey())}" placeholder="Paste a free key from carto.com/basemaps/apikey" autocomplete="off" spellcheck="false"></label>
+      <p class="muted" style="margin:0;font-size:11px">Map data © OpenStreetMap contributors${cartoKey() ? ', © CARTO' : ''} · Borders: Natural Earth · Towns: GeoNames (CC BY 4.0)</p>
     </div>`;
   $('#ownerLine').textContent = ui.owner ? ui.owner + ' · Runner’s passport' : 'Runner’s passport';
   bindImport();
@@ -1239,7 +1258,7 @@ function applyTheme() {
   $('#themeBtn').innerHTML = THEME_ICONS[ui.theme];
   $('#themeBtn').setAttribute('aria-label', 'Theme: ' + ui.theme);
   $('meta[name=theme-color]').content = cssVar('--bg') || '#0e1525';
-  if (baseTiles) { baseTiles.setUrl(TILE_URL(isDark(), false)); labelTiles.setUrl(TILE_URL(isDark(), true)); }
+  setTiles();
   if (booted) renderAll();
 }
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => ui.theme === 'auto' && applyTheme()); } catch (e) {}
@@ -1284,7 +1303,7 @@ $('#sortSel').addEventListener('change', e => { ui.sort = e.target.value; ui.dir
 $('#dirBtn').addEventListener('click', () => { ui.dir *= -1; renderList(); });
 $('#yearSel').addEventListener('change', e => { ui.year = e.target.value; renderList(); });
 $('#distChips').addEventListener('click', e => { const c = e.target.closest('[data-dist]'); if (c) { ui.dist = c.dataset.dist; renderList(); } });
-document.addEventListener('change', e => { if (e.target.id === 'ownerIn') { ui.owner = e.target.value.trim(); store.set('rp.owner', ui.owner); $('#ownerLine').textContent = ui.owner ? ui.owner + ' · Runner’s passport' : 'Runner’s passport'; } });
+document.addEventListener('change', e => { if (e.target.id === 'cartoIn') { store.set('rp.cartokey', e.target.value.trim()); tilesOk = false; tileErrors = 0; setTiles(); toast(e.target.value.trim() ? 'CARTO map style on' : 'Using OpenStreetMap tiles'); return; } if (e.target.id === 'ownerIn') { ui.owner = e.target.value.trim(); store.set('rp.owner', ui.owner); $('#ownerLine').textContent = ui.owner ? ui.owner + ' · Runner’s passport' : 'Runner’s passport'; } });
 setInterval(() => { if ($('#v-map').classList.contains('on')) renderCountdown(); }, 1000);
 
 /* ================= install & offline ================= */

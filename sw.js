@@ -1,7 +1,7 @@
 // Race Passport offline support.
 // The app page is fetched fresh when online (so updates show up right away) and from cache when offline.
 // Libraries, fonts, country shapes and town lists are cached after first use. Map tiles are not cached.
-const CACHE = 'race-passport-v2';
+const CACHE = 'race-passport-v3';
 const SHELL = ['./', './index.html', './art.js', './countries.json', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -14,7 +14,7 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  if (url.hostname.includes('nominatim') || url.hostname.includes('basemaps.cartocdn.com')) return; // always live
+  if (url.hostname.includes('nominatim') || url.hostname.includes('basemaps.cartocdn.com') || url.hostname.includes('tile.openstreetmap.org')) return; // always live
   const isPage = req.mode === 'navigate' || (url.origin === location.origin && url.pathname.endsWith('/index.html'));
   const isAppCode = url.origin === location.origin && url.pathname.endsWith('/art.js');
   if (isPage || isAppCode) {
