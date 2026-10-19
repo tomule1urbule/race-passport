@@ -1,0 +1,1131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Race Passport</title>
+<meta name="theme-color" content="#0e1525">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Race Passport">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{
+  --bg:#f3efe6;--card:#fffdf7;--card2:#f8f3e8;--ink:#14213d;--muted:#6b6f7b;--line:#e2d9c6;
+  --accent:#e4572e;--accent-ink:#fff;--good:#1f9d63;--bad:#c2410c;--gold:#c8961e;
+  --land:#ddd4c0;--land-line:#cbbfa6;--ocean:#efe9dc;--visited:#e4572e;
+  --shadow:0 1px 2px rgba(20,33,61,.06),0 6px 20px rgba(20,33,61,.07);
+  --num:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
+  --body:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  --page:repeating-radial-gradient(circle at 20% 30%,transparent 0 10px,rgba(20,33,61,.035) 10px 11px),var(--card);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1322;--card:#141e35;--card2:#18243f;--ink:#f2ede2;--muted:#93a0b8;--line:#243252;
+  --accent:#ff6b3d;--accent-ink:#1a0d06;--good:#3ccf8e;--bad:#ff8a5c;--gold:#f0c04a;
+  --land:#1d2a47;--land-line:#2c3b5f;--ocean:#0c1322;--visited:#ff6b3d;--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+  --page:repeating-radial-gradient(circle at 20% 30%,transparent 0 10px,rgba(255,255,255,.03) 10px 11px),var(--card);
+}}
+:root[data-theme="dark"]{
+  --bg:#0c1322;--card:#141e35;--card2:#18243f;--ink:#f2ede2;--muted:#93a0b8;--line:#243252;
+  --accent:#ff6b3d;--accent-ink:#1a0d06;--good:#3ccf8e;--bad:#ff8a5c;--gold:#f0c04a;
+  --land:#1d2a47;--land-line:#2c3b5f;--ocean:#0c1322;--visited:#ff6b3d;--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);
+  --page:repeating-radial-gradient(circle at 20% 30%,transparent 0 10px,rgba(255,255,255,.03) 10px 11px),var(--card);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.4}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+.vh{position:absolute!important;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.app{max-width:760px;margin:0 auto;min-height:100vh;padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+header.top{position:sticky;top:0;z-index:1500;display:flex;align-items:center;gap:10px;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top));background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.crest{width:38px;height:38px;color:var(--accent);flex:none}
+.brand h1{margin:0;font-family:var(--num);font-weight:800;font-size:26px;letter-spacing:.06em;line-height:1}
+.brand small{display:block;font-size:10px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;flex:none}
+.iconbtn svg{width:20px;height:20px}
+main{padding:16px}
+.view{display:none}.view.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+.sec-title{display:flex;align-items:baseline;justify-content:space-between;font-family:var(--num);font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:15px;color:var(--muted);margin:24px 2px 10px}
+.sec-title button{background:none;border:0;color:var(--accent);font:inherit;letter-spacing:.1em;padding:8px 0 8px 12px}
+.banner{background:var(--bad);color:#fff;border-radius:14px;padding:12px 14px;margin-bottom:14px;font-size:14px;font-weight:600}
+/* map */
+#mapwrap{position:relative;overflow:hidden;padding:0;isolation:isolate}
+#map{height:min(56vh,460px);background:var(--ocean);border-radius:18px}
+.leaflet-container{background:var(--ocean);font-family:var(--body)}
+.leaflet-control-zoom a{background:var(--card)!important;color:var(--ink)!important;border-color:var(--line)!important;width:36px!important;height:36px!important;line-height:36px!important}
+.leaflet-control-attribution{background:color-mix(in srgb,var(--card) 80%,transparent)!important;color:var(--muted)!important;font-size:9px}
+.leaflet-control-attribution a{color:var(--muted)!important}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:var(--shadow)}
+.leaflet-popup-content{margin:12px;min-width:220px;max-width:270px;max-height:340px;overflow:auto}
+.leaflet-container a.leaflet-popup-close-button{color:var(--muted);width:32px;height:32px;font-size:22px}
+.pin{width:30px;height:38px;position:relative}
+.pin svg{width:30px;height:38px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+.pin b{position:absolute;top:5px;left:0;width:30px;text-align:center;font:800 13px var(--num);color:#fff}
+.mapchips{position:absolute;right:10px;top:10px;z-index:900;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;pointer-events:none}
+.chipstat{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 11px;font:700 15px var(--num);letter-spacing:.04em;box-shadow:var(--shadow)}
+.chipstat span{color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.1em;margin-left:4px}
+.mapnote{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:20px;color:var(--muted);z-index:800;pointer-events:none}
+.pop-head{font:800 18px var(--num);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
+.pop-race{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px dashed var(--line)}
+.pop-race:first-of-type{border-top:0;padding-top:0}
+.pop-race .st{width:60px;height:60px;flex:none}
+.pop-race .tx{flex:1;min-width:0}
+.pop-race h4{margin:0;font-size:14px;line-height:1.2}
+.pop-race p{margin:2px 0 0;font-size:12px;color:var(--muted)}
+.pop-race .t{font:700 18px var(--num);color:var(--ink)}
+.pop-photo{width:100%;height:120px;object-fit:cover;border-radius:10px;margin-top:6px;display:block}
+.pop-btn{margin:8px 0 4px;width:100%;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card2);font-weight:700;font-size:14px;color:var(--ink)}
+/* countdown */
+.countdown{display:flex;gap:14px;align-items:center;padding:14px 16px;margin-bottom:14px;width:100%;text-align:left}
+.countdown .st{width:76px;height:76px;flex:none}
+.countdown .lbl{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.countdown h3{margin:2px 0 4px;font-size:17px;line-height:1.2}
+.cd-digits{display:flex;gap:12px}
+.cd-digits div{font:800 30px/1 var(--num);min-width:34px}
+.cd-digits small{display:block;font:600 10px var(--body);letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-top:2px}
+/* passport page */
+.ppage{background:var(--page);padding:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ppage button{background:none;border:0;padding:2px;border-radius:12px;aspect-ratio:1}
+.ppage button:active{transform:scale(.96)}
+.ppage .st{width:100%;height:100%}
+/* list */
+.toolbar{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.toolbar select,.field input,.field select,.field textarea{background:var(--card);border:1px solid var(--line);border-radius:12px;min-height:48px;padding:0 12px;width:100%;font-size:16px}
+.toolbar select{width:auto;flex:1;min-width:120px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;min-height:42px;padding:0 15px;border-radius:999px;border:1px solid var(--line);background:var(--card);font:700 15px var(--num);letter-spacing:.06em;text-transform:uppercase}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.race{display:flex;align-items:center;gap:12px;padding:12px;margin-bottom:10px;width:100%;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:18px;box-shadow:var(--shadow)}
+.race:active{transform:scale(.99)}
+.race .st{width:72px;height:72px;flex:none}
+.race .mid{flex:1;min-width:0}
+.race h3{margin:0;font-size:16px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.race .meta{font-size:13px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.race .tags{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.tag{font:700 12px var(--num);letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:6px;background:var(--card2);border:1px solid var(--line)}
+.tag.pb{background:var(--gold);color:#1b1404;border-color:var(--gold)}
+.tag.up{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.tag.goal{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,var(--line))}
+.race .right{text-align:right;flex:none}
+.race .time{font:800 26px/1 var(--num);letter-spacing:.02em}
+.race .pace{font-size:12px;color:var(--muted);margin-top:4px}
+.yearhead{font:800 22px var(--num);letter-spacing:.08em;margin:18px 4px 8px;color:var(--muted)}
+.empty{text-align:center;padding:36px 20px}
+.empty .big{width:110px;height:110px;margin:0 auto 12px;color:var(--accent)}
+.empty h2{font-family:var(--num);font-size:28px;letter-spacing:.05em;margin:0 0 6px}
+.empty p{color:var(--muted);margin:0 0 16px}
+/* stats */
+.bignums{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:560px){.bignums{grid-template-columns:repeat(4,1fr)}}
+.bignum{padding:14px 16px}
+.bignum b{display:block;font:800 52px/0.95 var(--num);letter-spacing:.01em}
+.bignum span{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.pbgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.pbcard{padding:14px 16px;text-align:left;width:100%}
+.pbcard .d{font:800 15px var(--num);letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+.pbcard .t{font:800 38px/1.05 var(--num)}
+.pbcard .s{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pbcard.none .t{color:var(--line)}
+.bars{padding:14px 16px}
+.bar{display:flex;align-items:center;gap:10px;margin:6px 0}
+.bar .y{width:44px;font:700 17px var(--num)}
+.bar .track{flex:1;height:22px;background:var(--card2);border-radius:6px;overflow:hidden}
+.bar .fill{height:100%;background:var(--accent);border-radius:6px}
+.bar .n{width:28px;text-align:right;font:800 18px var(--num)}
+.conts{display:flex;gap:6px;flex-wrap:wrap}
+.conts .chip{min-height:34px;display:inline-flex;align-items:center;cursor:default}
+/* badges */
+.medals{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:560px){.medals{grid-template-columns:repeat(3,1fr)}}
+.medal{padding:14px 10px 12px;text-align:center;width:100%;position:relative;overflow:hidden}
+.medal .m{width:72px;height:86px;margin:0 auto 6px;display:block}
+.medal h4{margin:0;font:800 18px/1.1 var(--num);letter-spacing:.04em;text-transform:uppercase}
+.medal p{margin:3px 0 0;font-size:12px;color:var(--muted);line-height:1.3}
+.medal .when{margin-top:6px;font:700 11px var(--num);letter-spacing:.14em;color:var(--gold);text-transform:uppercase}
+.medal.tier-gold{background:linear-gradient(160deg,color-mix(in srgb,#f0c04a 16%,var(--card)),var(--card) 60%)}
+.medal.tier-silver{background:linear-gradient(160deg,color-mix(in srgb,#a8b3c2 18%,var(--card)),var(--card) 60%)}
+.medal.tier-bronze{background:linear-gradient(160deg,color-mix(in srgb,#c27a43 16%,var(--card)),var(--card) 60%)}
+.hiddenbadges{margin-top:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;color:var(--muted);font-size:14px}
+.hiddenbadges .lock{width:42px;height:42px;border-radius:50%;border:2px dashed var(--line);display:grid;place-items:center;flex:none;font:800 18px var(--num);color:var(--muted)}
+.unlock{text-align:center;padding:6px 0 4px}
+.unlock .lbl{font:800 16px var(--num);letter-spacing:.3em;color:var(--accent)}
+.unlock .stage{position:relative;width:220px;height:230px;margin:6px auto 4px;display:grid;place-items:center}
+.unlock .rays{position:absolute;inset:0;border-radius:50%;background:repeating-conic-gradient(color-mix(in srgb,var(--gold) 35%,transparent) 0 10deg,transparent 10deg 20deg);-webkit-mask:radial-gradient(circle,#000 25%,transparent 70%);mask:radial-gradient(circle,#000 25%,transparent 70%);animation:spin 14s linear infinite}
+.unlock .m{width:150px;height:180px;position:relative;animation:pop .55s cubic-bezier(.2,1.6,.4,1) both}
+.unlock h2{text-align:center;margin:0}
+.unlock p{color:var(--muted);margin:4px 0 14px}
+.unlock .more{display:flex;justify-content:center;gap:8px;margin-bottom:12px}
+.unlock .more svg{width:44px;height:53px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pop{from{transform:scale(.3) rotate(-20deg);opacity:0}to{transform:none;opacity:1}}
+/* buttons/settings */
+.btn{min-height:50px;border-radius:14px;border:1px solid var(--line);background:var(--card);font-weight:700;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;color:var(--ink);text-decoration:none}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.danger{background:var(--bad);color:#fff;border-color:var(--bad)}
+.btn.block{width:100%}
+.btn:disabled{opacity:.5}
+.btn svg{width:20px;height:20px}
+.row{display:flex;gap:10px}.row>*{flex:1;min-width:0}
+.settings{padding:14px 16px;display:grid;gap:12px}
+/* nav */
+nav.bottom{position:fixed;left:0;right:0;bottom:0;z-index:1600;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav.bottom .in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 84px 1fr 1fr;align-items:center;height:72px}
+.tab{background:none;border:0;height:72px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--muted);font:700 12px var(--num);letter-spacing:.14em;text-transform:uppercase}
+.tab svg{width:24px;height:24px}
+.tab.on{color:var(--ink)}
+.tab.on svg{color:var(--accent)}
+.fab{width:64px;height:64px;border-radius:20px;border:0;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;margin:-26px auto 0;box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 45%,transparent)}
+.fab svg{width:30px;height:30px}
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(5,8,16,.55);z-index:3000;display:none;align-items:flex-end;justify-content:center}
+.scrim.on{display:flex}
+.sheet{width:100%;max-width:640px;max-height:92vh;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--bg);border-radius:24px 24px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom));animation:up .22s ease-out;position:relative}
+@media(min-width:700px){.scrim{align-items:center}.sheet{border-radius:24px}}
+@keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+.sheethead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0 12px}
+.sheethead h2{font-family:var(--num);font-size:28px;letter-spacing:.05em;margin:0;text-transform:uppercase}
+.closebtn{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;flex:none}
+.closebtn svg{width:18px;height:18px}
+.field{display:block;margin-bottom:12px}
+.field>span{display:block;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0 2px 5px}
+.field textarea{padding:10px 12px;min-height:70px;resize:vertical}
+.field input:focus,.field select:focus,.field textarea:focus,.toolbar select:focus{outline:2px solid var(--accent);outline-offset:1px}
+.timein{font:700 22px var(--num)!important;letter-spacing:.06em}
+.distpick{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.distpick button{min-height:50px;border-radius:12px;border:1px solid var(--line);background:var(--card);font:800 18px var(--num);letter-spacing:.06em;text-transform:uppercase}
+.distpick button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.hint{font-size:12px;color:var(--muted);margin:-6px 2px 12px}
+.livepace{font:700 15px var(--num);letter-spacing:.06em;color:var(--accent);margin:-4px 2px 12px;min-height:18px}
+.filetap{position:relative;overflow:hidden}
+.filetap input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:200px;z-index:2}
+.photoin{display:flex;align-items:center;gap:12px;min-height:64px;border:1.5px dashed var(--line);border-radius:14px;padding:8px 12px;background:var(--card);cursor:pointer;width:100%;text-align:left}
+.photoin img{width:52px;height:52px;border-radius:10px;object-fit:cover;flex:none}
+.photoin .ph{width:52px;height:52px;border-radius:10px;background:var(--card2);display:grid;place-items:center;flex:none;color:var(--muted)}
+.photoin .ph svg{width:24px;height:24px}
+.photoin b{display:block;font-size:15px}
+.photoin small{color:var(--muted);font-size:12px}
+.detail-stamp{width:220px;height:220px;margin:0 auto 8px;display:block}
+.detail h2{text-align:center;margin:0 0 2px;font-family:var(--num);font-size:30px;letter-spacing:.04em;text-transform:uppercase}
+.detail .sub{text-align:center;color:var(--muted);margin-bottom:14px}
+.dgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+.dgrid div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.dgrid b{display:block;font:800 30px/1.05 var(--num)}
+.dgrid span{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.dgrid em{display:block;font-style:normal;font-size:12px;font-weight:700}
+.detail-photo{width:100%;max-height:380px;object-fit:cover;border-radius:16px;margin-bottom:12px;display:block}
+.notes{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;white-space:pre-wrap;margin-bottom:12px}
+.confirm{background:var(--card);border:1px solid var(--bad);border-radius:14px;padding:12px;margin-top:10px}
+.confirm p{margin:0 0 10px;font-weight:600}
+.sharepreview{width:100%;max-width:300px;aspect-ratio:9/16;border-radius:16px;display:block;margin:0 auto 10px;box-shadow:var(--shadow);background:var(--card2);object-fit:contain}
+.toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:12px;font-weight:600;z-index:4000;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.on{opacity:1}
+.st svg{width:100%;height:100%;display:block;overflow:visible}
+.muted{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <svg class="crest" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="21"/><circle cx="24" cy="24" r="16.5" stroke-width="1.2"/><path d="M8 24h32M24 7.5c-5 4.5-7 10-7 16.5s2 12 7 16.5M24 7.5c5 4.5 7 10 7 16.5s-2 12-7 16.5" stroke-width="1.2"/></svg>
+      <div><h1>RACE PASSPORT</h1><small id="ownerLine">Runner's passport</small></div>
+    </div>
+    <button class="iconbtn" id="themeBtn" type="button" aria-label="Toggle theme"></button>
+  </header>
+
+  <main>
+    <div id="storageBanner"></div>
+    <section class="view on" id="v-map">
+      <div id="nextRace"></div>
+      <div class="card" id="mapwrap">
+        <div class="mapchips" id="mapChips"></div>
+        <div id="map"></div>
+      </div>
+      <div id="mapEmpty"></div>
+      <div id="pageWrap"></div>
+    </section>
+
+    <section class="view" id="v-races">
+      <div class="toolbar">
+        <select id="sortSel" aria-label="Sort">
+          <option value="date">Sort: Date</option>
+          <option value="distance">Sort: Distance</option>
+          <option value="time">Sort: Finish time</option>
+          <option value="pace">Sort: Pace</option>
+        </select>
+        <button class="iconbtn" id="dirBtn" type="button" aria-label="Reverse order"></button>
+        <select id="yearSel" aria-label="Year"></select>
+      </div>
+      <div class="chips" id="distChips"></div>
+      <div id="raceList"></div>
+    </section>
+
+    <section class="view" id="v-stats">
+      <div id="statsBody"></div>
+    </section>
+  </main>
+</div>
+
+<nav class="bottom"><div class="in">
+  <button class="tab on" type="button" data-tab="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg>Map</button>
+  <button class="tab" type="button" data-tab="races"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1.3"/><circle cx="4" cy="12" r="1.3"/><circle cx="4" cy="18" r="1.3"/></svg>Races</button>
+  <button class="fab" id="addBtn" type="button" aria-label="Add race"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+  <button class="tab" type="button" data-tab="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Stats</button>
+  <button class="tab" type="button" id="shareTab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>Share</button>
+</div></nav>
+
+<div class="scrim" id="scrim"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" role="status"></div>
+<datalist id="countryList"></datalist>
+<datalist id="cityList"></datalist>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+<script>
+'use strict';
+/* ================= helpers ================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const hash = s => { let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+const pad = n => String(n).padStart(2, '0');
+const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const fmtDate = (s, upper) => { if (!s) return ''; const [y, m, d] = s.split('-').map(Number); const t = `${d} ${MONTHS[m - 1]} ${y}`; return upper ? t : t.replace(/[A-Z]{3}/, x => x[0] + x.slice(1).toLowerCase()); };
+const CAN_STORE = (() => { try { localStorage.setItem('rp.t', '1'); localStorage.removeItem('rp.t'); return true; } catch (e) { return false; } })();
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+};
+function toast(msg, ms = 2400) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('on'), ms); }
+const isDark = () => { const t = document.documentElement.dataset.theme; return t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches); };
+const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* photos: IndexedDB first, localStorage as a fallback */
+const idb = (() => {
+  let p;
+  const open = () => p || (p = new Promise((res, rej) => {
+    try {
+      if (!window.indexedDB) return rej('no idb');
+      const r = indexedDB.open('race-passport', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('photos');
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); r.onblocked = () => rej('blocked');
+      setTimeout(() => rej('timeout'), 3000);
+    } catch (e) { rej(e); }
+  }));
+  const run = async (mode, fn) => { const db = await open(); return new Promise((res, rej) => { const tx = db.transaction('photos', mode); const req = fn(tx.objectStore('photos')); tx.oncomplete = () => res(req && req.result); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error); }); };
+  return {
+    set: (k, v) => run('readwrite', s => s.put(v, k)),
+    del: k => run('readwrite', s => s.delete(k)),
+    all: async () => { const db = await open(); return new Promise((res, rej) => { const out = {}; const c = db.transaction('photos').objectStore('photos').openCursor(); c.onsuccess = () => { const cur = c.result; if (cur) { out[cur.key] = cur.value; cur.continue(); } else res(out); }; c.onerror = () => rej(c.error); }); }
+  };
+})();
+async function savePhoto(id, data) {
+  photos[id] = data;
+  try { await idb.set(id, data); try { localStorage.removeItem('rp.ph.' + id); } catch (e) {} return true; } catch (e) {}
+  if (store.set('rp.ph.' + id, data)) return true;
+  toast('Photo shown, but this browser won’t let it be saved', 3500); return false;
+}
+async function deletePhoto(id) { delete photos[id]; try { await idb.del(id); } catch (e) {} try { localStorage.removeItem('rp.ph.' + id); } catch (e) {} }
+async function loadPhotos() {
+  let out = {};
+  try { out = await idb.all(); } catch (e) {}
+  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('rp.ph.')) out[k.slice(6)] = JSON.parse(localStorage.getItem(k)); } } catch (e) {}
+  return out;
+}
+async function shrink(file, max = 1000) {
+  let src;
+  try { src = await createImageBitmap(file); } catch (e) {
+    src = await new Promise((res, rej) => { const img = new Image(), url = URL.createObjectURL(file); img.onload = () => { URL.revokeObjectURL(url); res(img); }; img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('decode')); }; img.src = url; });
+  }
+  const w = src.width, h = src.height, s = Math.min(1, max / Math.max(w, h));
+  const c = document.createElement('canvas'); c.width = Math.round(w * s); c.height = Math.round(h * s);
+  c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', .8);
+}
+// A real <input type=file> sits invisibly on top of each photo button, so the tap opens the picker
+// directly. Works in phone browsers and in-app web views that block scripted clicks.
+const FILE_IN = (accept = 'image/*') => `<input type="file" accept="${accept}" aria-label="Choose file">`;
+function onPhotoChosen(input, cb) {
+  input.addEventListener('change', async () => {
+    const f = input.files && input.files[0]; if (!f) return;
+    toast('Adding photo…', 1500);
+    try { await cb(await shrink(f)); } catch (e) { toast('Couldn’t read that photo. Try a JPG or PNG.', 3500); }
+    input.value = '';
+  });
+}
+async function saveFile(blob, name) {
+  const file = new File([blob], name, { type: blob.type });
+  const a = document.createElement('a');
+  if ('download' in a) { a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); return true; }
+  if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file] }); return true; } catch (e) {} }
+  toast('This browser blocked the download'); return false;
+}
+
+/* ================= time & pace ================= */
+function parseTime(s) {
+  if (s == null) return null; s = String(s).trim(); if (!s) return null;
+  let parts;
+  if (/[:.]/.test(s)) parts = s.split(/[:.]/).map(x => x === '' ? 0 : Number(x));
+  else { const d = s.replace(/\D/g, ''); if (!d) return null; parts = [+(d.slice(0, -4) || 0), +(d.slice(-4, -2) || 0), +d.slice(-2)]; }
+  if (parts.length > 3 || parts.some(n => isNaN(n) || n < 0)) return null;
+  let t = 0; for (const n of parts) t = t * 60 + n;
+  return t > 0 ? Math.round(t) : null;
+}
+function fmtTime(sec) {
+  if (!sec && sec !== 0) return '—';
+  sec = Math.round(sec); const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  return h ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+}
+const paceOf = r => r.time && r.km ? r.time / r.km : null;
+const fmtPace = p => { if (!p) return '—'; const s = Math.round(p); return `${Math.floor(s / 60)}:${pad(s % 60)}`; };
+
+/* ================= distances ================= */
+const DIST = {
+  '5K':   { label: '5K',       stamp: '5 KM',          km: 5,       ink: '#0f7f81' },
+  '10K':  { label: '10K',      stamp: '10 KM',         km: 10,      ink: '#2457c5' },
+  'HM':   { label: 'Half',     stamp: 'HALF MARATHON', km: 21.0975, ink: '#7b3fbf' },
+  'M':    { label: 'Marathon', stamp: 'MARATHON',      km: 42.195,  ink: '#c62f2a' },
+  'ULTRA':{ label: 'Ultra',    stamp: 'ULTRA',         km: 50,      ink: '#a85a14', custom: true },
+  'OTHER':{ label: 'Other',    stamp: 'RACE',          km: 15,      ink: '#3d7a4a', custom: true }
+};
+const DIST_ORDER = ['5K', '10K', 'HM', 'M', 'ULTRA', 'OTHER'];
+const fmtKm = k => (Math.round(k * 10) / 10).toString();
+const distName = r => r.dist === 'ULTRA' ? `${fmtKm(r.km)} km ultra` : r.dist === 'OTHER' ? `${fmtKm(r.km)} km` : DIST[r.dist].label;
+const stampLabel = r => r.dist === 'ULTRA' ? `${fmtKm(r.km)} KM ULTRA` : r.dist === 'OTHER' ? `${fmtKm(r.km)} KM` : DIST[r.dist].stamp;
+const pbKey = r => DIST[r.dist].custom ? `${r.dist}:${fmtKm(r.km)}` : r.dist;
+
+/* ================= countries ================= */
+const CONTINENT_CODES = {
+  Europe: 'AD AL AT BA BE BG BY CH CY CZ DE DK EE ES FI FO FR GB GI GR HR HU IE IS IT LI LT LU LV MC MD ME MK MT NL NO PL PT RO RS RU SE SI SK SM UA VA XK',
+  Asia: 'AE AF AM AZ BD BH BN BT CN GE HK ID IL IN IQ IR JO JP KG KH KR KW KZ LA LB LK MM MN MO MV MY NP OM PH PK PS QA SA SG SY TH TJ TL TM TR TW UZ VN YE',
+  Africa: 'AO BF BI BJ BW CD CF CG CI CM CV DJ DZ EG ER ET GA GH GM GN GQ GW KE KM LR LS LY MA MG ML MR MU MW MZ NA NE NG RE RW SC SD SL SN SO SS ST SZ TD TG TN TZ UG ZA ZM ZW',
+  'North America': 'AG AW BB BM BS BZ CA CR CU CW DM DO GD GL GT HN HT JM KN LC MX NI PA PR SV TT US VC',
+  'South America': 'AR BO BR CL CO EC GY PE PY SR UY VE',
+  Oceania: 'AU FJ FM KI MH NC NR NZ PF PG PW SB TO VU WS'
+};
+const CONT_OF = {}; for (const [c, list] of Object.entries(CONTINENT_CODES)) list.split(' ').forEach(k => CONT_OF[k] = c);
+const NAME_FIX = { XK: 'Kosovo', TR: 'Turkey', CZ: 'Czechia', US: 'United States', GB: 'United Kingdom' };
+const TOPO_ALIAS = { US: 'United States of America', CD: 'Dem. Rep. Congo', BA: 'Bosnia and Herz.', DO: 'Dominican Rep.', CF: 'Central African Rep.', SS: 'S. Sudan', GQ: 'Eq. Guinea', CI: "Côte d'Ivoire", SZ: 'eSwatini', SB: 'Solomon Is.', MK: 'Macedonia', RU: 'Russia', KR: 'South Korea', LA: 'Laos', VN: 'Vietnam', SY: 'Syria', IR: 'Iran', BO: 'Bolivia', VE: 'Venezuela', TZ: 'Tanzania', MD: 'Moldova', PS: 'Palestine', TW: 'Taiwan', BN: 'Brunei', MM: 'Myanmar', CG: 'Congo', TR: 'Turkey', CZ: 'Czechia' };
+const TOPO_ALIAS2 = { MK: 'North Macedonia', SZ: 'Eswatini', CZ: 'Czech Rep.' };
+const TEXT_ALIAS = { usa: 'US', unitedstatesofamerica: 'US', america: 'US', uk: 'GB', england: 'GB', scotland: 'GB', wales: 'GB', greatbritain: 'GB', britain: 'GB', holland: 'NL', czechrepublic: 'CZ', turkiye: 'TR', southkorea: 'KR', korea: 'KR', russia: 'RU', uae: 'AE', emirates: 'AE', northmacedonia: 'MK', lietuva: 'LT', latvija: 'LV', eesti: 'EE', kypros: 'CY' };
+let DN = null; try { DN = new Intl.DisplayNames(['en'], { type: 'region' }); } catch (e) {}
+const cName = c => NAME_FIX[c] || (DN ? (DN.of(c) || c) : c);
+const flag = c => /^[A-Z]{2}$/.test(c) && c !== 'XK' ? String.fromCodePoint(...[...c].map(ch => 127397 + ch.charCodeAt(0))) : '🏳️';
+const ALL_CODES = Object.keys(CONT_OF).sort((a, b) => cName(a).localeCompare(cName(b)));
+const NAME_TO_CODE = {}; ALL_CODES.forEach(c => { NAME_TO_CODE[norm(cName(c))] = c; NAME_TO_CODE[norm(c)] = c; }); Object.assign(NAME_TO_CODE, TEXT_ALIAS);
+function codeFromText(t) {
+  const k = norm(String(t).replace(/[^\p{L}\s'.-]/gu, '')); if (!k) return null;
+  if (NAME_TO_CODE[k]) return NAME_TO_CODE[k];
+  // forgiving match: the country name typed last wins (e.g. "LithuaniaLatvia" -> Latvia)
+  let best = null, at = -1, len = 0;
+  for (const [name, code] of Object.entries(NAME_TO_CODE)) { if (name.length < 4) continue; const i = k.lastIndexOf(name); if (i > at || (i === at && i >= 0 && name.length > len)) { at = i; len = name.length; best = code; } }
+  return at >= 0 ? best : null;
+}
+
+/* ================= glyphs (24x24, stroked) ================= */
+const G = {
+  tower:    'M12 2v2M10 4h4M10.6 4 8.2 14M13.4 4l2.4 10M7 14h10M8 14 5.2 22M16 14l2.8 8M9.2 22a2.8 2.8 0 0 1 5.6 0M9.6 9h4.8M4.5 22h15',
+  castle:   'M6 22V9h12v13M5 9V5h2.5v2h2V5h5v2h2V5H19v4M10 22v-4.5a2 2 0 0 1 4 0V22M8.6 12h1.2M14.2 12h1.2M3.5 22h17',
+  spire:    'M12 1.5v3M10.8 2.8h2.4M12 4.5 9.5 11h5L12 4.5zM9.5 11v4M14.5 11v4M7.5 15h9v7h-9zM11 22v-3.5h2V22M4 22h16',
+  dome:     'M3.5 22h17M5.5 22v-9h13v9M6.5 13a5.5 5.5 0 0 1 11 0M12 7.5V3.5M10.4 5h3.2M10 22v-4h4v4M8 16v1.5M16 16v1.5',
+  columns:  'M3 21.5h18M4 18.5h16M3.5 9h17L12 3.5zM6 9v9.5M10 9v9.5M14 9v9.5M18 9v9.5',
+  bridge:   'M1.5 16h21M1.5 9.5c4 0 6.5 6.5 10.5 6.5s6.5-6.5 10.5-6.5M5.5 7v14M18.5 7v14M9 14v7M15 14v7M3 21.5h18',
+  windmill: 'M9.5 22l1.3-10.5h2.4L14.5 22M12 9.2 6 3.2M12 9.2l6-6M12 9.2l-6 6M12 9.2l6 6M7 3.5l1.5 1.5M17 3.5 15.5 5M7.5 22h9',
+  mountain: 'M1.5 20.5 8.5 8l4 6.5 3-4 7 10zM6.6 11.3l1.9 1.3 1.6-1.4M3 20.5h18',
+  palm:     'M11.5 22c.2-5.5 1-9.5 2.5-12M14 10c-2.2-3-6.3-3-8.5-.8M14 10c1-3 5-4 7.3-2M14 10c-3.2.2-5.2 2.4-5.4 5.5M14 10c3 .3 5 2.4 5.2 5.3M7 22h11M4 22c2-1 4-1 6 0',
+  lighthouse:'M9 22l1.5-13.5h3L15 22M7.5 22h9M9.8 8.5h4.4M10.6 8.5V5.5h2.8v3M12 5.5V3.5M4.5 5.5l3.5 1.5M19.5 5.5 16 7M4.5 9.5 8 9M19.5 9.5 16 9M10.4 14h3.2M10 18h4',
+  skyline:  'M3 22V12h4v10M7 22V5h5v17M12 22V9h4v13M16 22v-8h5v8M1.5 22h21M9 8h1M9 11h1M9 14h1M14 12h.5M14 15h.5M18.5 17h.5',
+  pagoda:   'M12 1.8v2.4M4.5 8.2c3 0 5.4-2 7.5-4 2.1 2 4.5 4 7.5 4M7 8.2v3M17 8.2v3M3.5 13.5c3 0 5.5-2.3 8.5-2.3s5.5 2.3 8.5 2.3M6.5 13.5V18M17.5 13.5V18M4 22h16M5 18h14M10 22v-4M14 22v-4',
+  arch:     'M2.5 6h19M4 6V3.5h16V6M5 6v16M19 6v16M3.5 22h5.5v-6a3 3 0 0 1 6 0v6h5.5M9 9.5h6M12 2v1.5',
+  wheel:    'M12 10.5m-7 0a7 7 0 1 0 14 0a7 7 0 1 0-14 0M12 3.5v14M5 10.5h14M7 5.5l10 10M17 5.5l-10 10M8.2 22 12 10.5 15.8 22M5.5 22h13',
+  sail:     'M12 2.5v13M12 3.5l7 11h-7M11 6.5l-6 8h6M2.5 17h19l-3 3.5h-13zM1.5 22.5c2-1 4-1 6 0s4 1 6 0 4-1 6 0',
+  pyramid:  'M1.5 21 10 5l8.5 16zM10 5l2.5 16M14 13.5l2.5-3.5 6 11h-4M4.5 15.5h7.5M7 11h4',
+  runner:   'M14.5 3.6a1.6 1.6 0 1 0 .01 0M9.6 21l2.6-5.8 2.9 1.7 1 4.1M12.2 15.2l1.4-6.2-4.9 2.1-2 3.3M13.6 9l3.2 2.8 3.3-1M3 21h18',
+  star:     'M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z',
+  bolt:     'M13 2 4.5 13.5H11L10 22l8.5-11.5H12z',
+  globe:    'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0M3 12h18M12 3c-2.6 2.5-3.8 5.5-3.8 9s1.2 6.5 3.8 9M12 3c2.6 2.5 3.8 5.5 3.8 9s-1.2 6.5-3.8 9',
+  target:   'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 12m-5 0a5 5 0 1 0 10 0a5 5 0 1 0-10 0M12 12m-1.2 0a1.2 1.2 0 1 0 2.4 0a1.2 1.2 0 1 0-2.4 0',
+  calendar: 'M4 6h16v15H4zM4 10h16M8 3v5M16 3v5M8 14h2M14 14h2M8 17.5h2',
+  route:    'M6 19a2 2 0 1 0 .01 0M18 5a2 2 0 1 0 .01 0M6 17V9a3 3 0 0 1 6 0v6a3 3 0 0 0 6 0V7',
+  flag:     'M5 22V3M5 4h12l-2.5 4L17 12H5',
+  podium:   'M3 21V14h6v7M9 21V9h6v12M15 21v-5h6v5M2 21h20M12 3.5l.9 1.8 2 .3-1.4 1.4.3 2-1.8-.9-1.8.9.3-2-1.4-1.4 2-.3z',
+  stopwatch:'M12 13m-8 0a8 8 0 1 0 16 0a8 8 0 1 0-16 0M12 13V9M10 2h4M12 2v3M18.5 5.5l1.5-1.5'
+};
+const CITY = {
+  vilnius:[54.6872,25.2797,'castle'],kaunas:[54.8985,23.9036,'castle'],klaipeda:[55.7033,21.1443,'lighthouse'],trakai:[54.6379,24.9343,'castle'],siauliai:[55.9349,23.3137,'castle'],panevezys:[55.7348,24.3575,'spire'],palanga:[55.9175,21.0686,'sail'],druskininkai:[54.0167,23.9667,'spire'],birstonas:[54.6056,24.0264,'spire'],nida:[55.3036,21.0057,'sail'],alytus:[54.3963,24.0459,'bridge'],
+  riga:[56.9496,24.1052,'spire'],jurmala:[56.968,23.7704,'sail'],valmiera:[57.5385,25.4264,'castle'],tallinn:[59.437,24.7536,'castle'],tartu:[58.378,26.729,'bridge'],parnu:[58.3859,24.4971,'sail'],
+  larnaka:[34.9003,33.6232,'palm'],larnaca:[34.9003,33.6232,'palm'],limassol:[34.6786,33.0413,'palm'],paphos:[34.772,32.4297,'palm'],nicosia:[35.1856,33.3823,'columns'],ayianapa:[34.9873,34.0005,'palm'],
+  athens:[37.9838,23.7275,'columns'],thessaloniki:[40.6401,22.9444,'columns'],rome:[41.9028,12.4964,'columns'],florence:[43.7696,11.2558,'dome'],milan:[45.4642,9.19,'dome'],venice:[45.4408,12.3155,'sail'],turin:[45.0703,7.6869,'dome'],valletta:[35.8989,14.5146,'sail'],
+  paris:[48.8566,2.3522,'tower'],nice:[43.7102,7.262,'palm'],bordeaux:[44.8378,-.5792,'bridge'],lyon:[45.764,4.8357,'dome'],london:[51.5074,-.1278,'wheel'],manchester:[53.4808,-2.2426,'skyline'],edinburgh:[55.9533,-3.1883,'castle'],brighton:[50.8225,-.1372,'wheel'],dublin:[53.3498,-6.2603,'bridge'],
+  berlin:[52.52,13.405,'arch'],munich:[48.1351,11.582,'dome'],frankfurt:[50.1109,8.6821,'skyline'],hamburg:[53.5511,9.9937,'sail'],cologne:[50.9375,6.9603,'spire'],
+  amsterdam:[52.3676,4.9041,'windmill'],rotterdam:[51.9244,4.4777,'bridge'],eindhoven:[51.4416,5.4697,'skyline'],brussels:[50.8503,4.3517,'dome'],antwerp:[51.2194,4.4025,'spire'],luxembourg:[49.6116,6.1319,'castle'],
+  prague:[50.0755,14.4378,'bridge'],budapest:[47.4979,19.0402,'bridge'],vienna:[48.2082,16.3738,'wheel'],warsaw:[52.2297,21.0122,'castle'],krakow:[50.0647,19.945,'castle'],gdansk:[54.352,18.6466,'spire'],wroclaw:[51.1079,17.0385,'bridge'],poznan:[52.4064,16.9252,'castle'],bratislava:[48.1486,17.1077,'castle'],ljubljana:[46.0569,14.5058,'bridge'],zagreb:[45.815,15.9819,'spire'],dubrovnik:[42.6507,18.0944,'castle'],split:[43.5081,16.4402,'sail'],belgrade:[44.7866,20.4489,'dome'],bucharest:[44.4268,26.1025,'arch'],sofia:[42.6977,23.3219,'dome'],
+  copenhagen:[55.6761,12.5683,'sail'],stockholm:[59.3293,18.0686,'sail'],gothenburg:[57.7089,11.9746,'sail'],helsinki:[60.1699,24.9384,'dome'],oslo:[59.9139,10.7522,'sail'],reykjavik:[64.1466,-21.9426,'mountain'],
+  barcelona:[41.3874,2.1686,'dome'],madrid:[40.4168,-3.7038,'arch'],valencia:[39.4699,-.3763,'dome'],seville:[37.3891,-5.9845,'dome'],malaga:[36.7213,-4.4214,'palm'],sansebastian:[43.3183,-1.9812,'sail'],lisbon:[38.7223,-9.1393,'lighthouse'],porto:[41.1579,-8.6291,'bridge'],funchal:[32.6669,-16.9241,'palm'],
+  zurich:[47.3769,8.5417,'mountain'],geneva:[46.2044,6.1432,'mountain'],lucerne:[47.0502,8.3093,'mountain'],interlaken:[46.6863,7.8632,'mountain'],zermatt:[46.0207,7.7491,'mountain'],chamonix:[45.9237,6.8694,'mountain'],innsbruck:[47.2692,11.4041,'mountain'],salzburg:[47.8095,13.055,'castle'],
+  istanbul:[41.0082,28.9784,'dome'],antalya:[36.8969,30.7133,'palm'],minsk:[53.9006,27.559,'skyline'],kyiv:[50.4501,30.5234,'dome'],lviv:[49.8397,24.0297,'spire'],tbilisi:[41.7151,44.8271,'mountain'],
+  newyork:[40.7128,-74.006,'skyline'],nyc:[40.7128,-74.006,'skyline'],boston:[42.3601,-71.0589,'lighthouse'],chicago:[41.8781,-87.6298,'skyline'],sanfrancisco:[37.7749,-122.4194,'bridge'],losangeles:[34.0522,-118.2437,'palm'],honolulu:[21.3069,-157.8583,'palm'],toronto:[43.6532,-79.3832,'skyline'],vancouver:[49.2827,-123.1207,'mountain'],mexicocity:[19.4326,-99.1332,'pyramid'],
+  tokyo:[35.6762,139.6503,'pagoda'],kyoto:[35.0116,135.7681,'pagoda'],osaka:[34.6937,135.5023,'castle'],seoul:[37.5665,126.978,'pagoda'],beijing:[39.9042,116.4074,'pagoda'],shanghai:[31.2304,121.4737,'skyline'],hongkong:[22.3193,114.1694,'skyline'],singapore:[1.3521,103.8198,'skyline'],bangkok:[13.7563,100.5018,'pagoda'],
+  dubai:[25.2048,55.2708,'skyline'],abudhabi:[24.4539,54.3773,'dome'],telaviv:[32.0853,34.7818,'palm'],jerusalem:[31.7683,35.2137,'dome'],cairo:[30.0444,31.2357,'pyramid'],marrakech:[31.6295,-7.9811,'dome'],capetown:[-33.9249,18.4241,'mountain'],nairobi:[-1.2921,36.8219,'mountain'],
+  sydney:[-33.8688,151.2093,'sail'],melbourne:[-37.8136,144.9631,'skyline'],auckland:[-36.8485,174.7633,'sail'],queenstown:[-45.0312,168.6626,'mountain'],riodejaneiro:[-22.9068,-43.1729,'mountain'],buenosaires:[-34.6037,-58.3816,'skyline'],santiago:[-33.4489,-70.6693,'mountain']
+};
+const COUNTRY_GLYPH = { LT:'castle',LV:'spire',EE:'castle',CY:'palm',GR:'columns',IT:'columns',FR:'tower',GB:'wheel',DE:'arch',NL:'windmill',BE:'spire',CH:'mountain',AT:'mountain',NO:'mountain',IS:'mountain',NP:'mountain',NZ:'mountain',JP:'pagoda',CN:'pagoda',KR:'pagoda',TH:'pagoda',VN:'pagoda',EG:'pyramid',MX:'pyramid',US:'skyline',PT:'lighthouse',ES:'dome',DK:'sail',SE:'sail',FI:'sail',HR:'sail',MT:'sail',AU:'sail',PL:'castle',CZ:'bridge',HU:'bridge',IE:'castle',TR:'dome',AE:'skyline',MA:'dome',BR:'mountain',ZA:'mountain',CA:'mountain',SI:'mountain',SK:'castle',BY:'spire',UA:'dome',GE:'mountain',IL:'dome',SG:'skyline',LU:'castle',RO:'arch',BG:'dome',RS:'dome' };
+const glyphFor = r => (CITY[norm(r.city)] || [])[2] || COUNTRY_GLYPH[r.country] || 'runner';
+
+/* ================= state & derived data ================= */
+let races = store.get('rp.races', []);
+let photos = {};
+let VER = 0, cache = { ver: -1 };
+const ui = { sort: 'date', dir: -1, dist: 'ALL', year: 'ALL', theme: store.get('rp.theme', 'auto'), owner: store.get('rp.owner', '') };
+let saveWarned = false;
+const save = () => { VER++; if (!store.set('rp.races', races) && !saveWarned) { saveWarned = true; toast('This browser isn’t saving — open the app from its own web address', 4000); } };
+const isUpcoming = r => r.date > todayStr() || (r.date === todayStr() && !r.time);
+const done = () => races.filter(r => !isUpcoming(r));
+const upcoming = () => races.filter(isUpcoming).sort((a, b) => a.date.localeCompare(b.date));
+function derived() {
+  if (cache.ver === VER && cache.day === todayStr()) return cache;
+  const d = done().sort((a, b) => a.date.localeCompare(b.date) || (a.created || 0) - (b.created || 0));
+  const pbs = {};
+  for (const r of d) { if (!r.time) continue; const k = pbKey(r); if (!pbs[k] || r.time < pbs[k].time) pbs[k] = r; }
+  // badges with the date each was first earned
+  const earned = {};
+  for (let i = 0; i < d.length; i++) {
+    const c = ctxOf(d.slice(0, i + 1));
+    for (const b of BADGES) if (!earned[b.id] && b.t(c)) earned[b.id] = d[i].date;
+  }
+  cache = { ver: VER, day: todayStr(), pbs, pbIds: new Set(Object.values(pbs).map(r => r.id)), earned, ctx: ctxOf(d) };
+  return cache;
+}
+function ctxOf(list) {
+  const c = { n: list.length, km: 0, countries: new Set(), cities: new Set(), citySet: new Set(), conts: new Set(), mConts: new Set(), dists: new Set(), best: {}, pbEvents: 0, goalHits: 0, perYear: {}, podium: false };
+  for (const r of list) {
+    c.km += r.km || 0; c.countries.add(r.country); c.cities.add(norm(r.city) + '|' + r.country); c.citySet.add(norm(r.city)); c.dists.add(r.dist);
+    const ct = CONT_OF[r.country]; if (ct) { c.conts.add(ct); if (r.dist === 'M') c.mConts.add(ct); }
+    if (r.time) { const k = pbKey(r); if (c.best[k] == null) c.best[k] = r.time; else if (r.time < c.best[k]) { c.best[k] = r.time; c.pbEvents++; } }
+    if (r.time && r.goal && r.time <= r.goal) c.goalHits++;
+    const y = r.date.slice(0, 4); c.perYear[y] = (c.perYear[y] || 0) + 1;
+    const p = parseInt(r.place, 10); if (p >= 1 && p <= 3) c.podium = true;
+  }
+  c.maxYear = Math.max(0, ...Object.values(c.perYear));
+  return c;
+}
+function computeStats() {
+  const d = done(), dv = derived();
+  const years = {}; d.forEach(r => { const y = r.date.slice(0, 4); years[y] = (years[y] || 0) + 1; });
+  return { races: d.length, countries: dv.ctx.countries, cities: dv.ctx.cities, km: dv.ctx.km, years, continents: dv.ctx.conts, pbs: dv.pbs };
+}
+
+/* ================= badges (hidden until earned) ================= */
+const lt = (c, k, s) => c.best[k] != null && c.best[k] < s;
+const BADGES = [
+  { id: 'first',   n: 'First Stamp',       d: 'Finished your first race',              tier: 'bronze', cat: 'mile',  g: 'flag',      t: c => c.n >= 1 },
+  { id: 'five',    n: 'High Five',         d: 'Five races in the passport',            tier: 'bronze', cat: 'mile',  g: 'runner',    t: c => c.n >= 5 },
+  { id: 'ten',     n: 'Decade',            d: 'Ten races finished',                    tier: 'silver', cat: 'mile',  g: 'star',      t: c => c.n >= 10 },
+  { id: 'tf',      n: 'Frequent Flyer',    d: '25 races finished',                     tier: 'gold',   cat: 'mile',  g: 'star',      t: c => c.n >= 25 },
+  { id: 'marathon',n: 'Marathoner',        d: 'Conquered 42.195 km',                   tier: 'silver', cat: 'dist',  g: 'route',     t: c => c.dists.has('M') },
+  { id: 'fullset', n: 'Full Set',          d: '5K, 10K, half and marathon',            tier: 'gold',   cat: 'dist',  g: 'podium',    t: c => ['5K', '10K', 'HM', 'M'].every(k => c.dists.has(k)) },
+  { id: 'ultra',   n: 'Beyond 42',         d: 'Finished an ultra',                     tier: 'gold',   cat: 'dist',  g: 'mountain',  t: c => c.dists.has('ULTRA') },
+  { id: 'km100',   n: '100 km Club',       d: '100 km of racing',                      tier: 'bronze', cat: 'dist',  g: 'route',     t: c => c.km >= 100 },
+  { id: 'km500',   n: '500 km Club',       d: '500 km of racing',                      tier: 'gold',   cat: 'dist',  g: 'route',     t: c => c.km >= 500 },
+  { id: 'abroad',  n: 'Border Crosser',    d: 'Raced in a second country',             tier: 'bronze', cat: 'place', g: 'flag',      t: c => c.countries.size >= 2 },
+  { id: 'baltic3', n: 'Baltic Trio',       d: 'Raced in Lithuania, Latvia & Estonia',  tier: 'silver', cat: 'place', g: 'castle',    t: c => ['LT', 'LV', 'EE'].every(k => c.countries.has(k)) },
+  { id: 'balcap',  n: 'Baltic Capitals',   d: 'Vilnius, Riga and Tallinn',             tier: 'gold',   cat: 'place', g: 'spire',     t: c => ['vilnius', 'riga', 'tallinn'].every(k => c.citySet.has(k)) },
+  { id: 'c5',      n: 'Globetrotter',      d: 'Raced in 5 countries',                  tier: 'silver', cat: 'place', g: 'globe',     t: c => c.countries.size >= 5 },
+  { id: 'c10',     n: 'World Runner',      d: 'Raced in 10 countries',                 tier: 'gold',   cat: 'place', g: 'globe',     t: c => c.countries.size >= 10 },
+  { id: 'city10',  n: 'City Collector',    d: 'Raced in 10 different cities',          tier: 'silver', cat: 'place', g: 'skyline',   t: c => c.cities.size >= 10 },
+  { id: 'cont3',   n: 'Continental',       d: 'Raced on 3 continents',                 tier: 'gold',   cat: 'place', g: 'globe',     t: c => c.conts.size >= 3 },
+  { id: 'm3c',     n: 'Three-Continent Marathoner', d: 'Marathons on 3 continents',    tier: 'gold',   cat: 'place', g: 'sail',      t: c => c.mConts.size >= 3 },
+  { id: 's25',     n: 'Sub-25 5K',         d: '5K under 25:00',                        tier: 'bronze', cat: 'speed', g: 'stopwatch', t: c => lt(c, '5K', 1500) },
+  { id: 's20',     n: 'Sub-20 5K',         d: '5K under 20:00',                        tier: 'gold',   cat: 'speed', g: 'bolt',      t: c => lt(c, '5K', 1200) },
+  { id: 's50t',    n: 'Sub-50 10K',        d: '10K under 50:00',                       tier: 'bronze', cat: 'speed', g: 'stopwatch', t: c => lt(c, '10K', 3000) },
+  { id: 's45t',    n: 'Sub-45 10K',        d: '10K under 45:00',                       tier: 'silver', cat: 'speed', g: 'bolt',      t: c => lt(c, '10K', 2700) },
+  { id: 's40t',    n: 'Sub-40 10K',        d: '10K under 40:00',                       tier: 'gold',   cat: 'speed', g: 'bolt',      t: c => lt(c, '10K', 2400) },
+  { id: 's2h',     n: 'Sub-2 Half',        d: 'Half marathon under 2:00:00',           tier: 'bronze', cat: 'speed', g: 'stopwatch', t: c => lt(c, 'HM', 7200) },
+  { id: 's145h',   n: 'Sub-1:45 Half',     d: 'Half marathon under 1:45:00',           tier: 'silver', cat: 'speed', g: 'bolt',      t: c => lt(c, 'HM', 6300) },
+  { id: 's130h',   n: 'Sub-1:30 Half',     d: 'Half marathon under 1:30:00',           tier: 'gold',   cat: 'speed', g: 'bolt',      t: c => lt(c, 'HM', 5400) },
+  { id: 's4m',     n: 'Sub-4 Marathon',    d: 'Marathon under 4:00:00',                tier: 'silver', cat: 'speed', g: 'stopwatch', t: c => lt(c, 'M', 14400) },
+  { id: 's345m',   n: 'Sub-3:45 Marathon', d: 'Marathon under 3:45:00',                tier: 'gold',   cat: 'speed', g: 'bolt',      t: c => lt(c, 'M', 13500) },
+  { id: 's330m',   n: 'Sub-3:30 Marathon', d: 'Marathon under 3:30:00',                tier: 'gold',   cat: 'speed', g: 'bolt',      t: c => lt(c, 'M', 12600) },
+  { id: 'goal1',   n: 'On Target',         d: 'Beat your goal time',                   tier: 'bronze', cat: 'grit',  g: 'target',    t: c => c.goalHits >= 1 },
+  { id: 'goal3',   n: 'Goal Crusher',      d: 'Beat your goal time 3 times',           tier: 'silver', cat: 'grit',  g: 'target',    t: c => c.goalHits >= 3 },
+  { id: 'pb3',     n: 'PB Machine',        d: 'Improved a PB 3 times',                 tier: 'silver', cat: 'grit',  g: 'bolt',      t: c => c.pbEvents >= 3 },
+  { id: 'year6',   n: 'Busy Season',       d: '6 races in one calendar year',          tier: 'silver', cat: 'grit',  g: 'calendar',  t: c => c.maxYear >= 6 },
+  { id: 'podium',  n: 'Podium',            d: 'Finished in the top 3',                 tier: 'gold',   cat: 'grit',  g: 'podium',    t: c => c.podium }
+];
+const TIER = { gold: ['#fff1b8', '#e3b02a', '#7a5306'], silver: ['#ffffff', '#b6c0cd', '#4f5a69'], bronze: ['#ffd9b8', '#c9803f', '#5f3313'] };
+const RIB = { mile: ['#e4572e', '#14213d'], dist: ['#1f9d63', '#f4efe4'], place: ['#2457c5', '#f2c230'], speed: ['#c62f2a', '#f4efe4'], grit: ['#7b3fbf', '#f4efe4'] };
+function medalSVG(b, k = '') {
+  const u = 'm' + hash(b.id + k).toString(36), [l, m, d] = TIER[b.tier], [r1, r2] = RIB[b.cat];
+  let pts = ''; for (let i = 0; i < 36; i++) { const a = i / 36 * Math.PI * 2, rr = i % 2 ? 33.5 : 36.5; pts += `${(50 + Math.cos(a) * rr).toFixed(1)},${(82 + Math.sin(a) * rr).toFixed(1)} `; }
+  return `<svg viewBox="0 0 100 122" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+<linearGradient id="${u}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${l}"/><stop offset=".5" stop-color="${m}"/><stop offset="1" stop-color="${d}"/></linearGradient>
+<linearGradient id="${u}e" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${l}"/><stop offset=".6" stop-color="${m}"/><stop offset="1" stop-color="${d}"/></linearGradient>
+<radialGradient id="${u}s" cx=".32" cy=".28" r=".65"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
+<path d="M20 0h22l15 48-15 5z" fill="${r1}"/><path d="M28.5 0h5l14 50-4.5 1.5z" fill="${r2}"/>
+<path d="M80 0H58L43 48l15 5z" fill="${r1}" style="filter:brightness(.82)"/><path d="M71.5 0h-5l-14 50 4.5 1.5z" fill="${r2}" style="filter:brightness(.88)"/>
+<rect x="39" y="42" width="22" height="9" rx="3" fill="url(#${u}e)" stroke="${d}" stroke-width=".8"/>
+<polygon points="${pts}" fill="url(#${u}e)" stroke="${d}" stroke-width=".8"/>
+<circle cx="50" cy="82" r="29" fill="url(#${u}g)" stroke="${d}" stroke-width="1"/>
+<circle cx="50" cy="82" r="24" fill="none" stroke="${d}" stroke-width=".9" stroke-dasharray="1.4 2.2" opacity=".75"/>
+<g transform="translate(36.5 68.5) scale(1.125)"><path d="${G[b.g]}" fill="none" stroke="${d}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<circle cx="50" cy="82" r="29" fill="url(#${u}s)"/></svg>`;
+}
+
+/* ================= stamp SVG ================= */
+function stampSVG(r, opts = {}) {
+  const dark = opts.dark ?? isDark();
+  const id = 's' + hash(r.id + (opts.k || '') + (dark ? 'd' : 'l')).toString(36);
+  const h = hash(r.id), rot = (h % 15) - 7;
+  const ink = dark ? '#f6f2e9' : DIST[r.dist].ink;
+  const up = isUpcoming(r);
+  const dv = derived(), pb = dv.pbIds.has(r.id);
+  const F0 = `font-family="'Barlow Condensed','Arial Narrow',Arial,sans-serif" fill="${ink}"`, F = F0 + ' text-anchor="middle"', FL = F0 + ' text-anchor="start"';
+  const top = `${(r.city || '').toUpperCase()} · ${r.country}`;
+  const topFs = Math.max(6.5, Math.min(11, 150 / (top.length * .66))).toFixed(1);
+  const label = stampLabel(r), pace = paceOf(r);
+  const big = up ? 'UPCOMING' : r.time ? fmtTime(r.time) : 'FINISHER';
+  const bigFs = up ? 15 : r.time ? (big.length > 6 ? 24 : 27) : 17;
+  const sub = up ? (r.goal ? `GOAL ${fmtTime(r.goal)}` : fmtDate(r.date, true)) : pace ? `${fmtPace(pace)} /KM` : '';
+  const bits = [];
+  if (!up && r.place) bits.push('#' + String(r.place).replace(/^#/, '').slice(0, 6));
+  if (pb) bits.push('★ PB'); else if (!up && r.time && r.goal && r.time <= r.goal) bits.push('GOAL ✓');
+  const foot = bits.join(' · ');
+  const glyph = (x, y, sc) => `<g transform="translate(${x} ${y}) scale(${sc})"><path d="${G[glyphFor(r)]}" fill="none" stroke="${ink}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></g>`;
+  const dash = up ? ' stroke-dasharray="7 5"' : '';
+  let body;
+  if (h % 3 !== 0) { // round stamp
+    const dlFs = label.length > 11 ? 9 : label.length > 8 ? 10.5 : 12;
+    body = `<circle cx="70" cy="70" r="66" fill="none" stroke="${ink}" stroke-width="3.4"${dash}/>
+<circle cx="70" cy="70" r="52" fill="none" stroke="${ink}" stroke-width="1.3"/>
+<circle cx="70" cy="70" r="48.5" fill="none" stroke="${ink}" stroke-width=".9" stroke-dasharray="1.2 2.6"/>
+<path id="${id}t" d="M14 70A56 56 0 0 1 126 70" fill="none"/><path id="${id}b" d="M7.5 70A62.5 62.5 0 0 0 132.5 70" fill="none"/>
+<text ${F} font-size="${topFs}" font-weight="700" letter-spacing="1.6"><textPath href="#${id}t" startOffset="50%">${esc(top)}</textPath></text>
+<text ${F} font-size="10" font-weight="700" letter-spacing="1.8"><textPath href="#${id}b" startOffset="50%">${esc(fmtDate(r.date, true))}</textPath></text>
+<text x="11.5" y="73.5" ${F} font-size="9">★</text><text x="128.5" y="73.5" ${F} font-size="9">★</text>
+${glyph(58, 22, 1)}
+<text x="70" y="60" ${F} font-size="${dlFs}" font-weight="800" letter-spacing="1.4">${esc(label)}</text>
+<text x="70" y="85" ${F} font-size="${bigFs}" font-weight="800" letter-spacing=".5">${esc(big)}</text>
+<text x="70" y="98" ${F} font-size="9.5" font-weight="700" letter-spacing="1.2">${esc(sub)}</text>
+<text x="70" y="110" ${F} font-size="8.5" font-weight="700" letter-spacing="1.2">${esc(foot)}</text>`;
+  } else { // rectangular stamp
+    const dlFs = label.length > 9 ? 8.5 : 11;
+    body = `<rect x="6" y="12" width="128" height="116" rx="12" fill="none" stroke="${ink}" stroke-width="3.4"${dash}/>
+<rect x="12" y="18" width="116" height="104" rx="7" fill="none" stroke="${ink}" stroke-width="1.2"/>
+<text x="70" y="34" ${F} font-size="${topFs}" font-weight="700" letter-spacing="1.6">${esc(top)}</text>
+<line x1="18" y1="41" x2="122" y2="41" stroke="${ink}" stroke-width="1"/>
+${glyph(19, 46, 1.15)}
+<text x="52" y="55" ${FL} font-size="${dlFs}" font-weight="800" letter-spacing="1.2">${esc(label)}</text>
+<text x="52" y="67" ${FL} font-size="9.5" font-weight="700" letter-spacing="1">${esc(sub)}</text>
+<text x="52" y="78" ${FL} font-size="8.5" font-weight="700" letter-spacing="1">${esc(foot)}</text>
+<text x="70" y="100" ${F} font-size="${bigFs - 2}" font-weight="800" letter-spacing=".5">${esc(big)}</text>
+<line x1="18" y1="106" x2="122" y2="106" stroke="${ink}" stroke-width="1"/>
+<text x="70" y="117" ${F} font-size="9.5" font-weight="700" letter-spacing="1.8">${esc(fmtDate(r.date, true))}</text>`;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 140"${opts.size ? ` width="${opts.size}" height="${opts.size}"` : ''} role="img" aria-label="${esc(r.name)} stamp">
+<defs><filter id="${id}f" x="-8%" y="-8%" width="116%" height="116%"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="${h % 50}" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.8" xChannelSelector="R" yChannelSelector="G" result="d"/><feComponentTransfer in="n" result="m"><feFuncA type="linear" slope="1.5" intercept="-0.12"/></feComponentTransfer><feComposite in="d" in2="m" operator="in"/></filter></defs>
+<g transform="rotate(${rot} 70 70)" filter="url(#${id}f)" opacity="${up ? .6 : .95}">${body}</g></svg>`;
+}
+
+/* ================= map ================= */
+let map, countryLayer, pinLayer, topoFeatures = [], featByCode = {}, mapFitted = false;
+function initMap() {
+  if (!window.L) { $('#map').innerHTML = '<div class="mapnote">Map couldn’t load — check your connection. Your races are safe.</div>'; return; }
+  map = L.map('map', { worldCopyJump: true, minZoom: 1, maxZoom: 9, zoomSnap: .5, tap: true }).setView([42, 15], 2);
+  map.attributionControl.setPrefix(false);
+  map.attributionControl.addAttribution('Natural Earth · places © OpenStreetMap');
+  pinLayer = L.layerGroup().addTo(map);
+  if (window.topojson) fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(r => r.json()).then(topo => {
+    topoFeatures = topojson.feature(topo, topo.objects.countries).features.filter(f => f.properties.name !== 'Antarctica');
+    const idx = {}; topoFeatures.forEach(f => idx[norm(f.properties.name)] = f);
+    ALL_CODES.forEach(c => { const f = idx[norm(TOPO_ALIAS[c])] || idx[norm(TOPO_ALIAS2[c])] || idx[norm(cName(c))]; if (f && !f.properties.code) { featByCode[c] = f; f.properties.code = c; } });
+    countryLayer = L.geoJSON({ type: 'FeatureCollection', features: topoFeatures }, { style: countryStyle, interactive: false }).addTo(map);
+    countryLayer.bringToBack();
+    fixMissingCoords();
+  }).catch(() => {});
+  renderPins();
+}
+const countryCode = f => f.properties.code || null;
+function countryStyle(f) {
+  const c = countryCode(f);
+  const visited = new Set(done().map(r => r.country)), planned = new Set(upcoming().map(r => r.country));
+  if (visited.has(c)) return { fillColor: cssVar('--visited'), fillOpacity: .78, color: cssVar('--visited'), weight: 1, dashArray: null };
+  if (planned.has(c)) return { fillColor: cssVar('--visited'), fillOpacity: .22, color: cssVar('--visited'), weight: 1, dashArray: '4 3' };
+  return { fillColor: cssVar('--land'), fillOpacity: 1, color: cssVar('--land-line'), weight: .6, dashArray: null };
+}
+function countryCenter(code) {
+  const f = featByCode[code]; if (!f) return null;
+  const polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+  let best = null, area = -1;
+  for (const p of polys) { let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity; for (const [x, y] of p[0]) { a = Math.min(a, x); b = Math.min(b, y); c = Math.max(c, x); d = Math.max(d, y); } const ar = (c - a) * (d - b); if (ar > area) { area = ar; best = [(b + d) / 2, (a + c) / 2]; } }
+  return best;
+}
+async function locate(r) {
+  const c = CITY[norm(r.city)];
+  if (c) { r.lat = c[0]; r.lng = c[1]; r.approx = false; return true; }
+  try {
+    const ctl = new AbortController(); setTimeout(() => ctl.abort(), 6000);
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=en&q=${encodeURIComponent(r.city + ', ' + cName(r.country))}`, { signal: ctl.signal });
+    const j = await res.json();
+    if (j && j[0]) { r.lat = +j[0].lat; r.lng = +j[0].lon; r.approx = false; return true; }
+  } catch (e) {}
+  const cc = countryCenter(r.country);
+  if (cc) { r.lat = cc[0]; r.lng = cc[1]; r.approx = true; return true; }
+  return false;
+}
+async function fixMissingCoords() {
+  let changed = false;
+  for (const r of races) if (r.lat == null || r.approx) { if (await locate(r)) changed = true; }
+  if (changed) { save(); renderPins(); }
+}
+const PIN_SVG = c => `<svg viewBox="0 0 30 38"><path d="M15 37C15 37 2 22.5 2 14a13 13 0 0 1 26 0c0 8.5-13 23-13 23z" fill="${c}" stroke="#fff" stroke-width="2"/></svg>`;
+function renderPins() {
+  if (!map) return;
+  pinLayer.clearLayers();
+  const groups = {};
+  races.filter(r => r.lat != null).forEach(r => { const k = norm(r.city) + '|' + r.country; (groups[k] = groups[k] || []).push(r); });
+  const pts = [];
+  for (const list of Object.values(groups)) {
+    list.sort((a, b) => b.date.localeCompare(a.date));
+    const r0 = list[0], allUp = list.every(isUpcoming);
+    const icon = L.divIcon({ className: '', iconSize: [30, 38], iconAnchor: [15, 37], popupAnchor: [0, -32], html: `<div class="pin">${PIN_SVG(allUp ? '#8a93a6' : cssVar('--accent'))}<b>${list.length > 1 ? list.length : ''}</b></div>` });
+    const m = L.marker([r0.lat, r0.lng], { icon }).addTo(pinLayer);
+    m.bindPopup(() => popupHTML(list), { maxWidth: 290, autoPanPaddingTopLeft: [10, 70] });
+    // Leaflet stops clicks inside popups from reaching the page, so wire the buttons here
+    m.on('popupopen', ev => {
+      const el = ev.popup.getElement(); if (!el) return;
+      el.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); openDetail(b.dataset.open); }));
+    });
+    pts.push([r0.lat, r0.lng]);
+  }
+  if (countryLayer) countryLayer.setStyle(countryStyle);
+  if (!mapFitted && pts.length) { mapFitted = true; map.fitBounds(pts, { padding: [50, 50], maxZoom: 5 }); }
+}
+function popupHTML(list) {
+  const pbIds = derived().pbIds, r0 = list[0];
+  let h = `<div class="pop-head">${flag(r0.country)} ${esc(r0.city)}</div>`;
+  for (const r of list) {
+    h += `<div class="pop-race"><div class="st">${stampSVG(r, { k: 'p' })}</div><div class="tx"><h4>${esc(r.name)}</h4><p>${fmtDate(r.date)} · ${esc(distName(r))}</p>
+      <div class="t">${isUpcoming(r) ? `<span style="color:var(--accent)">${daysTo(r.date)}</span>` : fmtTime(r.time)} ${pbIds.has(r.id) ? '<span class="tag pb">PB</span>' : ''}</div></div></div>`;
+    if (photos[r.id]) h += `<img class="pop-photo" src="${photos[r.id]}" alt="">`;
+    h += `<button type="button" class="pop-btn" data-open="${r.id}">View details</button>`;
+  }
+  return h;
+}
+const daysUntil = date => Math.ceil((new Date(date + 'T00:00:00') - new Date(todayStr() + 'T00:00:00')) / 864e5);
+const daysTo = date => { const n = daysUntil(date); return n <= 0 ? 'Today!' : n === 1 ? 'Tomorrow' : `in ${n} days`; };
+
+/* ================= renders ================= */
+function renderAll() { renderPins(); renderMapTab(); renderList(); renderStats(); }
+
+function renderMapTab() {
+  const st = computeStats();
+  $('#mapChips').innerHTML = races.length ? `<div class="chipstat">${st.countries.size}<span>COUNTRIES</span></div><div class="chipstat">${st.races}<span>RACES</span></div><div class="chipstat">${fmtKm(st.km)}<span>KM</span></div>` : '';
+  cdId = null; renderCountdown();
+  $('#mapEmpty').innerHTML = races.length ? '' : `<div class="empty"><svg class="big" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="24" r="21"/><circle cx="24" cy="24" r="16.5" stroke-width="1"/><path d="M8 24h32M24 7.5c-5 4.5-7 10-7 16.5s2 12 7 16.5M24 7.5c5 4.5 7 10 7 16.5s-2 12-7 16.5" stroke-width="1"/></svg><h2>YOUR PASSPORT IS EMPTY</h2><p>Add your first race — finished or upcoming. It takes about 20 seconds.</p><button type="button" class="btn primary" data-act="add" style="min-width:220px">Add a race</button></div>`;
+  const fin = done().sort((a, b) => b.date.localeCompare(a.date));
+  $('#pageWrap').innerHTML = fin.length ? `<div class="sec-title">Passport stamps · ${fin.length}${fin.length > 9 ? '<button type="button" data-act="allraces">See all</button>' : ''}</div>
+    <div class="card ppage">${fin.slice(0, 9).map(r => `<button type="button" data-open="${r.id}" aria-label="${esc(r.name)}"><div class="st">${stampSVG(r, { k: 'g' })}</div></button>`).join('')}</div>` : '';
+}
+let cdId = null;
+function renderCountdown() {
+  const nx = upcoming()[0], box = $('#nextRace');
+  if (!nx) { box.innerHTML = ''; cdId = null; return; }
+  const ms = Math.max(0, new Date(nx.date + 'T09:00:00') - Date.now());
+  const v = [Math.floor(ms / 864e5), pad(Math.floor(ms % 864e5 / 36e5)), pad(Math.floor(ms % 36e5 / 6e4)), pad(Math.floor(ms % 6e4 / 1e3))];
+  if (cdId !== nx.id) {
+    cdId = nx.id;
+    box.innerHTML = `<button type="button" class="card countdown" data-open="${nx.id}">
+      <div class="st">${stampSVG(nx, { k: 'c' })}</div>
+      <div style="flex:1;min-width:0"><div class="lbl">Next race${nx.goal ? ' · goal ' + fmtTime(nx.goal) : ''}</div><h3>${esc(nx.name)}</h3>
+      <div class="cd-digits">${['days', 'hrs', 'min', 'sec'].map((u, i) => `<div><span data-cd="${i}">${v[i]}</span><small>${u}</small></div>`).join('')}</div></div></button>`;
+  } else box.querySelectorAll('[data-cd]').forEach(s => { const t = String(v[s.dataset.cd]); if (s.textContent !== t) s.textContent = t; });
+}
+function raceRow(r) {
+  const isPB = derived().pbIds.has(r.id), up = isUpcoming(r), pace = paceOf(r);
+  const tags = [`<span class="tag">${esc(distName(r))}</span>`];
+  if (isPB) tags.push('<span class="tag pb">PB</span>');
+  if (up) tags.push(`<span class="tag up">${daysTo(r.date)}</span>`);
+  if (!up && r.time && r.goal) tags.push(r.time <= r.goal ? '<span class="tag goal">Goal ✓</span>' : `<span class="tag">+${fmtTime(r.time - r.goal)} vs goal</span>`);
+  if (r.place) tags.push(`<span class="tag">#${esc(String(r.place).replace(/^#/, ''))}</span>`);
+  if (photos[r.id]) tags.push('<span class="tag">📷</span>');
+  return `<button type="button" class="race" data-open="${r.id}"><div class="st">${stampSVG(r, { k: 'l' })}</div>
+    <div class="mid"><h3>${esc(r.name)}</h3><div class="meta">${flag(r.country)} ${esc(r.city)} · ${fmtDate(r.date)}</div><div class="tags">${tags.join('')}</div></div>
+    <div class="right"><div class="time">${up ? (r.goal ? fmtTime(r.goal) : '—') : fmtTime(r.time)}</div><div class="pace">${up ? 'goal' : pace ? fmtPace(pace) + ' /km' : ''}</div></div></button>`;
+}
+function renderList() {
+  const years = [...new Set(races.map(r => r.date.slice(0, 4)))].sort().reverse();
+  if (ui.year !== 'ALL' && !years.includes(ui.year)) ui.year = 'ALL';
+  $('#yearSel').innerHTML = `<option value="ALL">All years</option>` + years.map(y => `<option value="${y}" ${ui.year === y ? 'selected' : ''}>${y}</option>`).join('');
+  const present = DIST_ORDER.filter(k => races.some(r => r.dist === k));
+  if (!['ALL', 'UPCOMING', ...present].includes(ui.dist)) ui.dist = 'ALL';
+  $('#distChips').innerHTML = ['ALL', ...(upcoming().length ? ['UPCOMING'] : []), ...present].map(k => `<button type="button" class="chip ${ui.dist === k ? 'on' : ''}" data-dist="${k}">${k === 'ALL' ? 'All' : k === 'UPCOMING' ? 'Upcoming' : DIST[k].label}</button>`).join('');
+  $('#sortSel').value = ui.sort;
+  $('#dirBtn').innerHTML = ui.dir < 0 ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 4v16M3 16l4 4 4-4M14 6h7M14 12h5M14 18h3"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M7 20V4M3 8l4-4 4 4M14 6h3M14 12h5M14 18h7"/></svg>';
+  let list = races.filter(r => (ui.year === 'ALL' || r.date.startsWith(ui.year)) && (ui.dist === 'ALL' || (ui.dist === 'UPCOMING' ? isUpcoming(r) : r.dist === ui.dist)));
+  const key = { date: r => r.date, distance: r => r.km, time: r => r.time || Infinity, pace: r => paceOf(r) || Infinity }[ui.sort];
+  list.sort((a, b) => { const x = key(a), y = key(b); const c = typeof x === 'string' ? x.localeCompare(y) : x - y; return (c || b.date.localeCompare(a.date)) * ui.dir; });
+  if (ui.sort !== 'date') { const fin = list.filter(r => isFinite(key(r))), rest = list.filter(r => !isFinite(key(r))); list = fin.concat(rest); }
+  if (!races.length) { $('#raceList').innerHTML = `<div class="empty"><h2>NO RACES YET</h2><p>Tap + to add your first stamp.</p><button type="button" class="btn primary" data-act="add">Add a race</button></div>`; return; }
+  if (!list.length) { $('#raceList').innerHTML = '<p class="muted" style="text-align:center;padding:30px">No races match these filters.</p>'; return; }
+  if (ui.sort === 'date') {
+    let html = '', cur = '';
+    for (const r of list) { const y = r.date.slice(0, 4); if (y !== cur) { cur = y; html += `<div class="yearhead">${y}</div>`; } html += raceRow(r); }
+    $('#raceList').innerHTML = html;
+  } else $('#raceList').innerHTML = list.map(raceRow).join('');
+}
+function renderStats() {
+  const st = computeStats(), dv = derived();
+  const pbCards = DIST_ORDER.filter(k => !DIST[k].custom).map(k => { const r = st.pbs[k]; return r ? `<button type="button" class="card pbcard" data-open="${r.id}"><div class="d">${DIST[k].label}</div><div class="t">${fmtTime(r.time)}</div><div class="s">${fmtPace(paceOf(r))}/km · ${esc(r.city)} ${r.date.slice(0, 4)}</div></button>` : `<div class="card pbcard none"><div class="d">${DIST[k].label}</div><div class="t">--:--</div><div class="s">No race yet</div></div>`; });
+  Object.entries(st.pbs).filter(([k]) => k.includes(':')).forEach(([k, r]) => pbCards.push(`<button type="button" class="card pbcard" data-open="${r.id}"><div class="d">${esc(distName(r))}</div><div class="t">${fmtTime(r.time)}</div><div class="s">${fmtPace(paceOf(r))}/km · ${esc(r.city)}</div></button>`));
+  const yrs = Object.entries(st.years).sort((a, b) => b[0].localeCompare(a[0])), maxY = Math.max(1, ...yrs.map(y => y[1]));
+  const earned = BADGES.filter(b => dv.earned[b.id]).sort((a, b) => dv.earned[b.id].localeCompare(dv.earned[a.id]));
+  const hidden = BADGES.length - earned.length;
+  $('#statsBody').innerHTML = `
+    <div class="bignums">
+      <div class="card bignum"><b>${st.races}</b><span>Races</span></div>
+      <div class="card bignum"><b>${st.countries.size}</b><span>Countries</span></div>
+      <div class="card bignum"><b>${st.cities.size}</b><span>Cities</span></div>
+      <div class="card bignum"><b>${fmtKm(st.km)}</b><span>KM raced</span></div>
+    </div>
+    <button type="button" class="btn primary block" data-act="share" style="margin-top:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/></svg>Create Instagram story card</button>
+    <div class="sec-title">Badges · ${earned.length} earned</div>
+    ${earned.length ? `<div class="medals">${earned.map(b => `<button type="button" class="card medal tier-${b.tier}" data-badge="${b.id}"><span class="m">${medalSVG(b, 'g')}</span><h4>${esc(b.n)}</h4><p>${esc(b.d)}</p><div class="when">${fmtDate(dv.earned[b.id])}</div></button>`).join('')}</div>` : ''}
+    <div class="card hiddenbadges"><div class="lock">${hidden}</div><div>${earned.length ? `${hidden} more badges are still hidden. Keep racing to discover them.` : `${hidden} badges are hidden in your passport. Finish races, travel and chase PBs to reveal them.`}</div></div>
+    <div class="sec-title">Personal bests</div><div class="pbgrid">${pbCards.join('')}</div>
+    <div class="sec-title">Races per year</div>
+    <div class="card bars">${yrs.length ? yrs.map(([y, n]) => `<div class="bar"><div class="y">${y}</div><div class="track"><div class="fill" style="width:${n / maxY * 100}%"></div></div><div class="n">${n}</div></div>`).join('') : '<p class="muted" style="margin:0">No finished races yet.</p>'}</div>
+    <div class="sec-title">Continents · ${st.continents.size}/6</div>
+    <div class="conts">${['Europe', 'Asia', 'Africa', 'North America', 'South America', 'Oceania'].map(c => `<span class="chip ${st.continents.has(c) ? 'on' : ''}">${c}</span>`).join('')}</div>
+    <div class="sec-title">Passport settings</div>
+    <div class="card settings">
+      <label class="field" style="margin:0"><span>Name on passport</span><input id="ownerIn" value="${esc(ui.owner)}" placeholder="Your name" autocomplete="name" enterkeyhint="done"></label>
+      <div class="row"><button type="button" class="btn" data-act="export">Export backup</button><div class="btn filetap" id="importBox">Import backup${FILE_IN('application/json,.json')}</div></div>
+      <button type="button" class="btn primary" data-act="install" id="installBtn" style="display:${installPrompt ? '' : 'none'}">Install app on this phone</button>
+      <p class="muted" style="margin:0;font-size:12px">Races and photos are saved on this device. Export a backup now and then — it includes your photos.</p>
+    </div>`;
+  $('#ownerLine').textContent = ui.owner ? ui.owner + ' · Runner’s passport' : 'Runner’s passport';
+  bindImport();
+}
+
+/* ================= sheets ================= */
+const CLOSE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+function openSheet(title, html) {
+  $('#sheet').innerHTML = `<div class="sheethead"><h2>${title}</h2><button type="button" class="closebtn" data-act="close" aria-label="Close">${CLOSE_ICON}</button></div>` + html;
+  $('#scrim').classList.add('on'); document.body.style.overflow = 'hidden'; $('#sheet').scrollTop = 0;
+  if (map) map.closePopup();
+}
+function closeSheet() { $('#scrim').classList.remove('on'); document.body.style.overflow = ''; if (shareURL) { URL.revokeObjectURL(shareURL); shareURL = null; } }
+
+function openForm(r) {
+  const edit = !!r;
+  const last = store.get('rp.last', { country: 'LT', dist: 'HM' });
+  r = r || { date: todayStr(), country: last.country, dist: DIST[last.dist] ? last.dist : 'HM', km: DIST[DIST[last.dist] ? last.dist : 'HM'].km };
+  let formPhoto = photos[r.id] || null, photoChanged = false;
+  $('#countryList').innerHTML = ALL_CODES.map(c => `<option value="${flag(c)} ${esc(cName(c))}">`).join('');
+  $('#cityList').innerHTML = [...new Set(races.map(x => x.city))].map(c => `<option value="${esc(c)}">`).join('');
+  openSheet(edit ? 'Edit race' : 'New stamp', `
+  <form id="raceForm" autocomplete="off" novalidate>
+    <div class="field"><span>Distance</span><div class="distpick">${DIST_ORDER.map(k => `<button type="button" data-d="${k}" class="${r.dist === k ? 'on' : ''}">${DIST[k].label}</button>`).join('')}</div></div>
+    <label class="field" id="kmField" style="display:${DIST[r.dist].custom ? 'block' : 'none'}"><span>Distance (km)</span><input name="km" type="number" inputmode="decimal" step="0.1" min="0.1" value="${r.km || ''}"></label>
+    <div class="row"><label class="field"><span>City</span><input name="city" list="cityList" value="${esc(r.city || '')}" placeholder="Vilnius" autocapitalize="words" enterkeyhint="next"></label>
+    <label class="field"><span>Country</span><input name="country" list="countryList" value="${r.country ? flag(r.country) + ' ' + esc(cName(r.country)) : ''}" placeholder="Lithuania" enterkeyhint="next"></label></div>
+    <div class="row"><label class="field"><span>Date</span><input name="date" type="date" value="${r.date}"></label>
+    <label class="field"><span>Finish time</span><input name="time" class="timein" inputmode="numeric" placeholder="1:45:30" value="${r.time ? fmtTime(r.time) : ''}"></label></div>
+    <div class="livepace" id="livePace"></div>
+    <label class="field"><span>Race name <em class="muted" style="text-transform:none;letter-spacing:0;font-style:normal">(optional — auto-filled)</em></span><input name="rname" value="${esc(r.name || '')}" placeholder="e.g. Vilnius Half Marathon"></label>
+    <div class="row"><label class="field"><span>Goal time</span><input name="goal" class="timein" inputmode="numeric" placeholder="1:45:00" value="${r.goal ? fmtTime(r.goal) : ''}"></label>
+    <label class="field"><span>Placement</span><input name="place" inputmode="numeric" placeholder="e.g. 152" value="${esc(r.place || '')}"></label></div>
+    <label class="field"><span>Notes</span><textarea name="notes" placeholder="Weather, splits, how it felt…">${esc(r.notes || '')}</textarea></label>
+    <div class="field"><span>Medal or finish-line photo</span><div class="photoin filetap" id="photoBox"><div id="photoBtn" style="display:flex;align-items:center;gap:12px"></div>${FILE_IN()}</div>
+      <button type="button" class="btn" id="rmPhoto" style="margin-top:6px;min-height:42px;width:100%">Remove photo</button></div>
+    <p class="hint">Times: type 1:45:30 or just 14530. Leave the finish time empty for an upcoming race.</p>
+    <button class="btn primary block" type="button" id="saveRace">${edit ? 'Save changes' : 'Stamp it'}</button>
+  </form>`);
+  const f = $('#raceForm'), el = n => f.elements[n];
+  let dist = r.dist;
+  const drawPhoto = () => {
+    $('#photoBtn').innerHTML = formPhoto ? `<img src="${formPhoto}" alt=""><div><b>Photo added</b><small>Tap to replace</small></div>` : `<div class="ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 1 2-2h2l2-2h6l2 2h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div><b>Add a photo</b><small>Medal, bib or finish line</small></div>`;
+    $('#rmPhoto').style.display = formPhoto ? '' : 'none';
+  };
+  drawPhoto();
+  onPhotoChosen($('#photoBox input'), p => { formPhoto = p; photoChanged = true; drawPhoto(); });
+  $('#rmPhoto').onclick = () => { formPhoto = null; photoChanged = true; drawPhoto(); };
+  const upd = () => {
+    const t = parseTime(el('time').value), km = DIST[dist].custom ? parseFloat(el('km').value) : DIST[dist].km;
+    $('#livePace').textContent = t && km ? `${fmtPace(t / km)} /km · ${fmtKm(km)} km` : (el('date').value > todayStr() ? 'Future date → saved as upcoming with a countdown' : '');
+  };
+  f.querySelectorAll('.distpick button').forEach(b => b.onclick = () => { dist = b.dataset.d; f.querySelectorAll('.distpick button').forEach(x => x.classList.toggle('on', x === b)); $('#kmField').style.display = DIST[dist].custom ? 'block' : 'none'; if (DIST[dist].custom && !el('km').value) el('km').value = DIST[dist].km; upd(); });
+  ['input', 'change'].forEach(e => f.addEventListener(e, upd)); upd();
+  [el('time'), el('goal')].forEach(i => i.addEventListener('blur', () => { const t = parseTime(i.value); if (t) i.value = fmtTime(t); }));
+  let countryTouched = edit;
+  el('country').addEventListener('input', () => countryTouched = true);
+  el('country').addEventListener('focus', () => { try { el('country').select(); } catch (e) {} });
+  el('city').addEventListener('input', () => { if (countryTouched) return; const n = norm(el('city').value); const known = races.find(x => norm(x.city) === n); if (known) el('country').value = flag(known.country) + ' ' + cName(known.country); });
+  // Saving is a plain click handler, not a form submit: previews and in-app browsers often block form submission.
+  f.addEventListener('submit', e => e.preventDefault());
+  f.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); doSave(); } });
+  let saving = false;
+  $('#saveRace').addEventListener('click', () => doSave());
+  async function doSave() {
+    if (saving) return;
+    const city = el('city').value.trim();
+    if (!city) { toast('Add the city'); el('city').focus(); return; }
+    const country = codeFromText(el('country').value);
+    if (!country) { toast('Pick a country from the list'); el('country').focus(); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(el('date').value)) { toast('Pick the race date'); el('date').focus(); return; }
+    const km = DIST[dist].custom ? parseFloat(el('km').value) : DIST[dist].km;
+    if (!km || km <= 0) { toast('Enter the distance in km'); el('km').focus(); return; }
+    const time = parseTime(el('time').value);
+    if (el('time').value.trim() && !time) { toast('Finish time looks off — try 1:45:30'); el('time').focus(); return; }
+    const goal = parseTime(el('goal').value);
+    saving = true;
+    const before = new Set(Object.keys(derived().earned));
+    const rec = edit ? r : { id: uid(), created: Date.now() };
+    const prevLoc = rec._loc;
+    Object.assign(rec, {
+      name: el('rname').value.trim() || `${city} ${dist === 'HM' ? 'Half Marathon' : dist === 'M' ? 'Marathon' : DIST[dist].custom ? fmtKm(km) + ' km' : DIST[dist].label}`,
+      date: el('date').value, city, country, dist, km, time, goal, place: el('place').value.trim().replace(/^#/, ''), notes: el('notes').value.trim()
+    });
+    rec._loc = norm(city) + '|' + country;
+    if (prevLoc !== rec._loc) { rec.lat = null; rec.lng = null; const c = CITY[norm(city)]; if (c) { rec.lat = c[0]; rec.lng = c[1]; rec.approx = false; } }
+    if (!edit) races.push(rec);
+    store.set('rp.last', { country, dist });
+    if (photoChanged) { if (formPhoto) await savePhoto(rec.id, formPhoto); else await deletePhoto(rec.id); }
+    save(); closeSheet(); renderAll();
+    const dv = derived(), fresh = BADGES.filter(b => dv.earned[b.id] && !before.has(b.id));
+    const isPB = dv.pbIds.has(rec.id) && done().filter(x => pbKey(x) === pbKey(rec) && x.time).length > 1;
+    if (fresh.length) showUnlocked(fresh, isPB);
+    else toast(isUpcoming(rec) ? `Upcoming race added — ${daysTo(rec.date)}` : isPB ? '🏅 New PB! Stamped.' : edit ? 'Saved' : 'Stamped into your passport');
+    if (rec.lat == null) { if (await locate(rec)) { save(); renderPins(); } }
+  }
+}
+function openDetail(id) {
+  const r = races.find(x => x.id === id); if (!r) return;
+  const isPB = derived().pbIds.has(r.id), up = isUpcoming(r), pace = paceOf(r);
+  const goalDiff = r.time && r.goal ? r.time - r.goal : null;
+  openSheet('', `<div class="detail">
+    <div class="detail-stamp st">${stampSVG(r, { k: 'd' })}</div>
+    <h2>${esc(r.name)}</h2>
+    <div class="sub">${flag(r.country)} ${esc(r.city)}, ${esc(cName(r.country))} · ${fmtDate(r.date)}${isPB ? ' · <span class="tag pb">PB</span>' : ''}</div>
+    ${photos[r.id] ? `<img class="detail-photo" src="${photos[r.id]}" alt="Race photo">` : ''}
+    <div class="dgrid">
+      ${up ? `<div><span>Countdown</span><b>${daysTo(r.date)}</b></div><div><span>Goal</span><b>${r.goal ? fmtTime(r.goal) : '—'}</b></div>
+        <div><span>Goal pace /km</span><b>${r.goal ? fmtPace(r.goal / r.km) : '—'}</b></div><div><span>Distance</span><b>${fmtKm(r.km)} km</b></div>`
+      : `<div><span>Finish time</span><b>${fmtTime(r.time)}</b></div><div><span>Pace /km</span><b>${fmtPace(pace)}</b></div>
+        <div><span>Goal</span><b>${r.goal ? fmtTime(r.goal) : '—'}</b>${goalDiff != null ? `<em style="color:${goalDiff <= 0 ? 'var(--good)' : 'var(--bad)'}">${goalDiff <= 0 ? fmtTime(-goalDiff) + ' under goal' : fmtTime(goalDiff) + ' over goal'}</em>` : ''}</div>
+        <div><span>Placement</span><b>${r.place ? '#' + esc(r.place) : '—'}</b></div>`}
+    </div>
+    ${r.notes ? `<div class="notes">${esc(r.notes)}</div>` : ''}
+    <div class="btn block filetap" id="detailPhoto" style="margin-bottom:10px">${photos[r.id] ? 'Change photo' : 'Add photo'}${FILE_IN()}</div>
+    <div class="row" id="detailActions"><button type="button" class="btn" data-act="edit" data-id="${r.id}">Edit</button><button type="button" class="btn" data-act="del" data-id="${r.id}" style="color:var(--bad)">Delete</button></div>
+  </div>`);
+  onPhotoChosen($('#detailPhoto input'), async p => { await savePhoto(r.id, p); VER++; renderAll(); openDetail(r.id); toast('Photo added'); });
+}
+function showUnlocked(list, pb) {
+  const b = list[0];
+  openSheet('', `<div class="unlock"><div class="lbl">BADGE UNLOCKED</div>
+    <div class="stage"><div class="rays"></div><span class="m">${medalSVG(b, 'u')}</span></div>
+    <h2 style="font-family:var(--num);font-size:32px;letter-spacing:.04em;text-transform:uppercase">${esc(b.n)}</h2><p>${esc(b.d)}${pb ? ' · and a new PB!' : ''}</p>
+    ${list.length > 1 ? `<p style="margin-top:-6px">+ ${list.length - 1} more unlocked</p><div class="more">${list.slice(1, 6).map(x => medalSVG(x, 'um')).join('')}</div>` : ''}
+    <div class="row"><button type="button" class="btn" data-act="close">Nice!</button><button type="button" class="btn primary" data-act="tostats">See all badges</button></div></div>`);
+}
+function openBadge(id) {
+  const b = BADGES.find(x => x.id === id), when = derived().earned[id]; if (!b || !when) return;
+  openSheet('', `<div class="unlock"><div class="lbl">${b.tier.toUpperCase()} BADGE</div>
+    <div class="stage"><div class="rays"></div><span class="m">${medalSVG(b, 'v')}</span></div>
+    <h2 style="font-family:var(--num);font-size:32px;letter-spacing:.04em;text-transform:uppercase">${esc(b.n)}</h2><p>${esc(b.d)}<br>Earned ${fmtDate(when)}</p>
+    <button type="button" class="btn block" data-act="close">Close</button></div>`);
+}
+
+/* ================= share card (1080x1920) ================= */
+let shareURL = null;
+const svgImg = svg => new Promise(res => { const i = new Image(); const t = setTimeout(() => res(null), 4000); i.onload = () => { clearTimeout(t); res(i); }; i.onerror = () => { clearTimeout(t); res(null); }; i.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg); });
+async function makeCard(withStamps = true) {
+  try { await Promise.race([Promise.all([document.fonts.load('800 100px "Barlow Condensed"'), document.fonts.load('600 30px Inter')]), new Promise(r => setTimeout(r, 2500))]); } catch (e) {}
+  const W = 1080, H = 1920, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d'), dark = isDark();
+  const P = dark ? { bg1: '#0c1322', bg2: '#17264a', ink: '#f2ede2', muted: '#93a0b8', land: '#22335a', line: '#2c3d66', acc: '#ff6b3d', gold: '#f0c04a', guil: 'rgba(255,255,255,.045)' }
+                 : { bg1: '#f6f1e5', bg2: '#e9dfc9', ink: '#14213d', muted: '#6b6f7b', land: '#d8cdb5', line: '#c4b697', acc: '#e4572e', gold: '#b07f10', guil: 'rgba(20,33,61,.05)' };
+  const N = '"Barlow Condensed","Arial Narrow",Arial,sans-serif', st = computeStats();
+  const ls = v => { if ('letterSpacing' in x) x.letterSpacing = v + 'px'; };
+  const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, P.bg1); g.addColorStop(1, P.bg2); x.fillStyle = g; x.fillRect(0, 0, W, H);
+  x.strokeStyle = P.guil; x.lineWidth = 2;
+  for (let k = 0; k < 26; k++) { x.beginPath(); for (let i = 0; i <= W; i += 8) { const y = 120 + k * 70 + Math.sin(i / 60 + k) * 26 + Math.sin(i / 23 + k * 2) * 8; i ? x.lineTo(i, y) : x.moveTo(i, y); } x.stroke(); }
+  x.textAlign = 'center';
+  x.fillStyle = P.muted; x.font = `600 26px ${N}`; ls(10); x.fillText('PASSPORT · PASSEPORT · PASAS', W / 2, 150);
+  x.fillStyle = P.ink; x.font = `800 128px ${N}`; ls(6); x.fillText('RACE PASSPORT', W / 2, 280, W - 80);
+  x.fillStyle = P.acc; x.font = `700 36px ${N}`; ls(4); x.fillText((ui.owner || 'RUNNER').toUpperCase() + ' · ' + new Date().getFullYear(), W / 2, 335);
+  const mx = 40, my = 390, mw = 1000, latTop = 80, latBot = -58, mh = mw * (latTop - latBot) / 360;
+  const proj = (lng, lat) => [mx + (lng + 180) / 360 * mw, my + (latTop - lat) / (latTop - latBot) * mh];
+  x.save(); x.beginPath(); if (x.roundRect) x.roundRect(mx - 10, my - 10, mw + 20, mh + 20, 24); else x.rect(mx - 10, my - 10, mw + 20, mh + 20); x.clip();
+  for (const f of topoFeatures) {
+    const code = countryCode(f), polys = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+    x.beginPath();
+    for (const poly of polys) for (const ring of poly) ring.forEach(([lng, lat], i) => { const [px, py] = proj(lng, lat); i ? x.lineTo(px, py) : x.moveTo(px, py); });
+    const v = st.countries.has(code);
+    x.fillStyle = v ? P.acc : P.land; x.fill('evenodd'); x.strokeStyle = v ? P.acc : P.line; x.lineWidth = 1; x.stroke();
+  }
+  if (!topoFeatures.length) { x.fillStyle = P.muted; x.font = '500 30px Inter, sans-serif'; ls(0); x.fillText('map unavailable offline', W / 2, my + mh / 2); }
+  for (const r of done()) if (r.lat != null) { const [px, py] = proj(r.lng, r.lat); x.beginPath(); x.arc(px, py, 9, 0, 7); x.fillStyle = P.ink; x.fill(); x.lineWidth = 4; x.strokeStyle = P.acc; x.stroke(); }
+  x.restore();
+  const nums = [[st.races, 'RACES'], [st.countries.size, 'COUNTRIES'], [st.cities.size, 'CITIES'], [fmtKm(st.km), 'KM RACED']];
+  let y0 = my + mh + 60;
+  nums.forEach(([v, l], i) => {
+    const cx = 60 + (i % 2) * 500, cy = y0 + Math.floor(i / 2) * 200;
+    x.textAlign = 'left'; x.fillStyle = P.ink; x.font = `800 160px ${N}`; ls(0); x.fillText(String(v), cx, cy + 135);
+    x.fillStyle = P.muted; x.font = `700 30px ${N}`; ls(8); x.fillText(l, cx + 6, cy + 176);
+  });
+  y0 += 440;
+  x.strokeStyle = P.line; x.lineWidth = 2; x.beginPath(); x.moveTo(60, y0); x.lineTo(W - 60, y0); x.stroke();
+  x.fillStyle = P.gold; x.font = `700 30px ${N}`; ls(8); x.fillText('PERSONAL BESTS', 60, y0 + 54);
+  ['5K', '10K', 'HM', 'M'].forEach((k, i) => {
+    const cx = 60 + i * 245, r = st.pbs[k];
+    x.fillStyle = P.muted; x.font = `700 28px ${N}`; ls(5); x.fillText(DIST[k].label.toUpperCase(), cx, y0 + 104);
+    x.fillStyle = r ? P.ink : P.line; x.font = `800 ${r && r.time >= 3600 ? 58 : 66}px ${N}`; ls(0); x.fillText(r ? fmtTime(r.time) : '--', cx, y0 + 166);
+  });
+  y0 += 200;
+  if (withStamps) {
+    const recent = done().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
+    const imgs = await Promise.all(recent.map(r => svgImg(stampSVG(r, { k: 'card', size: 250, dark }))));
+    const n = imgs.length;
+    imgs.forEach((im, i) => { if (!im) return; const cx = W / 2 + (i - (n - 1) / 2) * 245, cy = y0 + 118 + (i % 2 ? 18 : 0); x.drawImage(im, cx - 125, cy - 125, 250, 250); });
+  }
+  const nx = upcoming()[0];
+  x.textAlign = 'center';
+  if (nx) { x.fillStyle = P.acc; x.font = `800 46px ${N}`; ls(3); x.fillText(`NEXT: ${nx.name.toUpperCase()} · ${Math.max(0, daysUntil(nx.date))} DAYS`, W / 2, H - 120, W - 120); }
+  x.fillStyle = P.muted; x.font = `600 26px ${N}`; ls(10); x.fillText('RACE PASSPORT', W / 2, H - 60);
+  return c;
+}
+const canvasBlob = c => new Promise((res, rej) => { try { c.toBlob(b => b ? res(b) : rej(new Error('blob')), 'image/png'); } catch (e) { rej(e); } });
+async function openShare() {
+  if (!done().length) { toast('Finish a race first — then your card has something to show'); return; }
+  openSheet('Story card', `<img class="sharepreview" id="sharePrev" alt="Story card preview"><p class="muted" id="shareMsg" style="text-align:center;margin:0 0 12px">Drawing your passport…</p><div class="row"><button type="button" class="btn" id="dlBtn" disabled>Save image</button><button type="button" class="btn primary" id="shBtn" disabled>Share</button></div>`);
+  let blob;
+  try { blob = await canvasBlob(await makeCard(true)); }
+  catch (e) { try { blob = await canvasBlob(await makeCard(false)); } catch (e2) { $('#shareMsg').textContent = 'This browser couldn’t draw the card.'; return; } }
+  if (!$('#sharePrev')) return;
+  shareURL = URL.createObjectURL(blob);
+  $('#sharePrev').src = shareURL; $('#shareMsg').textContent = '1080 × 1920 · on iPhone you can also long-press the image to save it';
+  const file = new File([blob], 'race-passport.png', { type: 'image/png' });
+  const canShare = !!(navigator.canShare && navigator.canShare({ files: [file] }));
+  $('#dlBtn').disabled = false; $('#dlBtn').onclick = () => saveFile(blob, 'race-passport.png');
+  const sh = $('#shBtn'); sh.disabled = false;
+  sh.onclick = canShare ? () => navigator.share({ files: [file], title: 'My Race Passport' }).catch(() => {}) : () => saveFile(blob, 'race-passport.png');
+  if (!canShare) sh.textContent = 'Save to share';
+}
+
+/* ================= backup ================= */
+async function exportBackup() {
+  const data = JSON.stringify({ app: 'race-passport', v: 2, exported: new Date().toISOString(), owner: ui.owner, races, photos });
+  if (await saveFile(new Blob([data], { type: 'application/json' }), `race-passport-${todayStr()}.json`)) toast('Backup saved');
+}
+function bindImport() {
+  const i = $('#importBox input'); if (!i) return;
+  i.onchange = async () => {
+    const f = i.files && i.files[0]; if (!f) return; i.value = '';
+    try {
+      const j = JSON.parse(await f.text()); if (!Array.isArray(j.races)) throw 0;
+      const ids = new Set(races.map(r => r.id)); let n = 0;
+      for (const r of j.races) if (r && r.id && !ids.has(r.id) && DIST[r.dist] && !r.demo) { races.push(r); n++; }
+      for (const [k, v] of Object.entries(j.photos || {})) if (races.some(r => r.id === k)) await savePhoto(k, v);
+      if (j.owner && !ui.owner) { ui.owner = j.owner; store.set('rp.owner', ui.owner); }
+      save(); mapFitted = false; renderAll(); fixMissingCoords(); toast(`Imported ${n} race${n === 1 ? '' : 's'}`);
+    } catch (e) { toast('That file isn’t a Race Passport backup'); }
+  };
+}
+
+/* ================= theme ================= */
+const THEME_ICONS = { auto: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>', light: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>', dark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>' };
+let booted = false;
+function applyTheme() {
+  if (ui.theme === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = ui.theme;
+  $('#themeBtn').innerHTML = THEME_ICONS[ui.theme];
+  $('#themeBtn').setAttribute('aria-label', 'Theme: ' + ui.theme);
+  $('meta[name=theme-color]').content = cssVar('--bg') || '#0e1525';
+  if (booted) renderAll();
+}
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => ui.theme === 'auto' && applyTheme()); } catch (e) {}
+
+/* ================= events ================= */
+function showTab(t) {
+  document.querySelectorAll('.tab[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('on', v.id === 'v-' + t));
+  if (t === 'map' && map) setTimeout(() => map.invalidateSize(), 60);
+  window.scrollTo({ top: 0 });
+}
+document.addEventListener('click', async e => {
+  const bd = e.target.closest('[data-badge]'); if (bd) { openBadge(bd.dataset.badge); return; }
+  const a = e.target.closest('[data-act]');
+  if (!a) { const o = e.target.closest('[data-open]'); if (o) openDetail(o.dataset.open); return; }
+  const act = a.dataset.act, r = a.dataset.id ? races.find(x => x.id === a.dataset.id) : null;
+  if (act === 'add') openForm();
+  else if (act === 'close') closeSheet();
+  else if (act === 'share') openShare();
+  else if (act === 'export') exportBackup();
+  else if (act === 'allraces') showTab('races');
+  else if (act === 'install') {
+    if (!installPrompt) { toast('Use Chrome\u2019s ⋮ menu → Install app', 3500); return; }
+    installPrompt.prompt(); const ch = await installPrompt.userChoice.catch(() => null); installPrompt = null; renderStats();
+    if (ch && ch.outcome === 'accepted') toast('Installing Race Passport…');
+  }
+  else if (act === 'tostats') { closeSheet(); showTab('stats'); }
+  else if (act === 'edit' && r) openForm(r);
+  else if (act === 'del' && r) {
+    $('#detailActions').outerHTML = `<div class="confirm" id="detailActions"><p>Delete “${esc(r.name)}”? This can’t be undone.</p><div class="row"><button type="button" class="btn" data-act="keep" data-id="${r.id}">Keep it</button><button type="button" class="btn danger" data-act="delyes" data-id="${r.id}">Delete</button></div></div>`;
+  }
+  else if (act === 'keep' && r) openDetail(r.id);
+  else if (act === 'delyes' && r) { races = races.filter(x => x.id !== r.id); await deletePhoto(r.id); save(); closeSheet(); renderAll(); toast('Race deleted'); }
+});
+document.querySelectorAll('.tab[data-tab]').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+$('#shareTab').addEventListener('click', openShare);
+$('#addBtn').addEventListener('click', () => openForm());
+$('#scrim').addEventListener('click', e => { if (e.target.id === 'scrim') closeSheet(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+$('#themeBtn').addEventListener('click', () => { ui.theme = { auto: 'light', light: 'dark', dark: 'auto' }[ui.theme]; store.set('rp.theme', ui.theme); applyTheme(); toast(ui.theme === 'auto' ? 'Theme: follows your phone' : 'Theme: ' + ui.theme); });
+$('#sortSel').addEventListener('change', e => { ui.sort = e.target.value; ui.dir = ui.sort === 'date' ? -1 : 1; renderList(); });
+$('#dirBtn').addEventListener('click', () => { ui.dir *= -1; renderList(); });
+$('#yearSel').addEventListener('change', e => { ui.year = e.target.value; renderList(); });
+$('#distChips').addEventListener('click', e => { const c = e.target.closest('[data-dist]'); if (c) { ui.dist = c.dataset.dist; renderList(); } });
+document.addEventListener('change', e => { if (e.target.id === 'ownerIn') { ui.owner = e.target.value.trim(); store.set('rp.owner', ui.owner); $('#ownerLine').textContent = ui.owner ? ui.owner + ' · Runner’s passport' : 'Runner’s passport'; } });
+setInterval(() => { if ($('#v-map').classList.contains('on')) renderCountdown(); }, 1000);
+
+/* ================= install & offline ================= */
+let installPrompt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e; if (booted) renderStats(); });
+window.addEventListener('appinstalled', () => { installPrompt = null; if (booted) renderStats(); toast('Race Passport installed — find it on your home screen', 3500); });
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  window.addEventListener('load', () => { try { navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {} });
+}
+// ask Chrome not to clear races/photos when the phone is low on space
+try { navigator.storage && navigator.storage.persist && navigator.storage.persist().catch(() => {}); } catch (e) {}
+
+/* ================= boot ================= */
+(async function boot() {
+  const before = races.length;
+  races = races.filter(r => r && r.id && DIST[r.dist] && !r.demo);
+  if (races.length !== before) store.set('rp.races', races);
+  let framed = false; try { framed = window.self !== window.top; } catch (e) { framed = true; }
+  if (CAN_STORE && framed) $('#storageBanner').innerHTML = '<div class="banner" style="background:var(--card2);color:var(--ink);border:1px solid var(--line)">You’re in a preview window. If photos or downloads don’t work here, open your GitHub Pages link.</div>';
+  if (!CAN_STORE) $('#storageBanner').innerHTML = '<div class="banner">This preview can’t save anything. Open Race Passport from its own web address (your GitHub Pages link) so your races and photos are kept.</div>';
+  applyTheme();
+  initMap();
+  renderAll();
+  booted = true;
+  photos = await loadPhotos();
+  for (const id of Object.keys(photos)) if (!races.some(r => r.id === id)) deletePhoto(id);
+  VER++; renderAll();
+})();
+</script>
+</body>
+</html>
